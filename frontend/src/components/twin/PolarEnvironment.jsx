@@ -1,12 +1,16 @@
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Sky, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { createPolarWaterTexture } from './polarTextures';
-import { WORKFLOWS } from './stationLayout';
 
 const TERRAIN_SIZE = 160;
 const TERRAIN_SEGMENTS = 224;
+// Preserve level work areas around the model's interpreted facilities.
+const FACILITY_APRONS = {
+ maitri:[[0,0,12,8],[-25,-3,4,3],[-18,6,3,1.4],[21,-8,3,1.4],[32,-23,1.75,1.5],[-27,17,6,7.5],[23,22,3,1.4],[30,22,3,1.4],[37,22,3,1.4],[-30,27,3,3],[-36,32,3,1.4],[21,17,2,2]],
+ bharati:[[0,0,26,16],[-38,17,6,7.5],[-27,-8,2,2],[36,-34,1.75,1.5],[37,12,5,1.4],[37,17,3,1.4],[-48,25,9,9],[-36,32,3,1.4],[33,21,2,2]]
+};
 
 function smoothstep(edge0, edge1, value) {
   const t = THREE.MathUtils.clamp((value - edge0) / (edge1 - edge0), 0, 1);
@@ -31,8 +35,14 @@ export function terrainHeight(site, x, z) {
     + Math.sin((x + z) * 0.043) * 0.37;
   const fine = Math.sin(x * 0.21 + Math.cos(z * 0.13)) * Math.cos(z * 0.19) * 0.2;
   const ridges = Math.pow(Math.max(0, Math.sin((x * 0.55 + z * 0.31) * 0.16)), 4) * 0.55;
+  // Broad, connected bedrock rises replace isolated spherical boulders. These
+  // landforms interpret the oasis / coastal promontory, not surveyed elevations.
+  const ridge = (cx, cz, width, depth, peak) => peak * Math.exp(-(((x-cx)/width)**2 + ((z-cz)/depth)**2));
+  const bedrock = site === 'maitri'
+    ? ridge(-53,-31,24,11,6.2)+ridge(5,-66,40,13,7)+ridge(59,25,18,34,4.5)
+    : ridge(-57,5,20,28,6.5)+ridge(15,64,43,16,5.2)+ridge(64,21,17,30,4.2);
   const outer = smoothstep(site === 'maitri' ? 18 : 34, 76, radius);
-  let height = -0.12 + outer * (0.5 + broad * (site === 'maitri' ? 1.8 : 2.3) + fine + ridges * 2.2);
+  let height = -0.12 + outer * (0.5 + broad * (site === 'maitri' ? 1.8 : 2.3) + fine + ridges * 2.2 + bedrock);
 
   if (site === 'maitri') {
     // Keep the immediate station apron level, then fold the site back into the oasis.
@@ -41,25 +51,15 @@ export function terrainHeight(site, x, z) {
     height = THREE.MathUtils.lerp(height, -0.08, shorelineBlend);
   }
 
+  for(const [cx,cz,hx,hz] of FACILITY_APRONS[site]) {
+    const edge=Math.max(Math.abs(x-cx)-hx,Math.abs(z-cz)-hz);
+    height=THREE.MathUtils.lerp(-.12,height,smoothstep(1,6,edge));
+  }
   return height;
 }
 
 export function coastlineZ(x) {
   return -27 + Math.sin(x * 0.055) * 4.8 + Math.sin(x * 0.13 + 1.2) * 2.1;
-}
-
-// Reserve complete footprints plus five metres for the largest rotated boulders.
-function infrastructureClear(site,x,z) {
- const footprints=site==='maitri'
-  ? [[0,0,12,8],[-25,-3,4,3],[-18,6,3,1.4],[21,-8,3,1.4],[32,-23,1.75,1.5],[-27,17,6,7.5],[23,22,3,1.4],[30,22,3,1.4],[37,22,3,1.4],[-30,27,3,3],[-36,32,3,1.4],[21,17,2,2]]
-  : [[0,0,26,16],[-38,17,6,7.5],[-27,-8,2,2],[36,-34,1.75,1.5],[37,12,5,1.4],[37,17,3,1.4],[-48,25,9,9],[-36,32,3,1.4],[33,21,2,2]];
- if(footprints.some(([cx,cz,hx,hz])=>Math.abs(x-cx)<hx+5&&Math.abs(z-cz)<hz+5))return false;
- for(const route of WORKFLOWS[site])for(let i=1;i<route.nodes.length;i++){
-  const a=route.nodes[i-1],b=route.nodes[i],dx=b[0]-a[0],dz=b[2]-a[2];
-  const t=THREE.MathUtils.clamp(((x-a[0])*dx+(z-a[2])*dz)/(dx*dx+dz*dz||1),0,1);
-  if(Math.hypot(x-a[0]-t*dx,z-a[2]-t*dz)<5)return false;
- }
- return true;
 }
 
 function createSnowTexture() {
@@ -150,110 +150,6 @@ function createTerrainGeometry(site, coverage) {
   geometry.setIndex(visibleTriangles);
   geometry.computeBoundingSphere();
   return geometry;
-}
-
-function InstanceField({ site, kind, count, snowCoverage=0 }) {
-  const meshRef = useRef(null);
-  const snowShader=useRef(null);
-  const geometry = useMemo(() => (
-    kind === 'mountain'
-      ? new THREE.IcosahedronGeometry(1, 2)
-      : kind === 'snow'
-        ? new THREE.SphereGeometry(1, 12, 8)
-        : new THREE.IcosahedronGeometry(1, 3)
-  ), [kind]);
-  const rockTexture = useMemo(() => {const c=document.createElement('canvas');c.width=c.height=256;const ctx=c.getContext('2d');const random=seededRandom(938);ctx.fillStyle='#c1bbb0';ctx.fillRect(0,0,256,256);for(let i=0;i<14000;i++){const v=70+random()*160;ctx.fillStyle=`rgb(${v},${v},${v})`;ctx.fillRect(random()*256,random()*256,1+random()*2,1+random()*2);}const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,3);return t;},[]);
-  const material = useMemo(() => new THREE.MeshStandardMaterial({
-    map:kind==='snow'?null:rockTexture, bumpMap:kind==='snow'?null:rockTexture, bumpScale:.12,
-    color: '#ffffff',
-    roughness: kind === 'snow' ? 0.94 : 0.97,
-    metalness: kind === 'snow' ? 0.01 : 0.02,
-    flatShading: false,
-  }), [kind, rockTexture]);
-
-  useLayoutEffect(()=>{
-    material.onBeforeCompile=shader=>{
-      shader.uniforms.snowCoverage={value:snowCoverage};snowShader.current=shader;
-      shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying float vSnowTop;');
-      shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
-        vec3 snowNormal=normal;
-        #ifdef USE_INSTANCING
-        snowNormal=mat3(instanceMatrix)*normal;
-        #endif
-        vSnowTop=normalize(mat3(modelMatrix)*snowNormal).y;`);
-      shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying float vSnowTop; uniform float snowCoverage;');
-      shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
-        float cap=smoothstep(0.2,0.8,vSnowTop)*smoothstep(0.15,0.9,snowCoverage);
-        diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.72,0.81,0.85),cap);`);
-    };
-    material.customProgramCacheKey=()=> 'polar-rock-snow-v1';
-    material.needsUpdate=true;
-  },[material]);
-  useLayoutEffect(()=>{if(snowShader.current)snowShader.current.uniforms.snowCoverage.value=snowCoverage;},[snowCoverage]);
-
-  useLayoutEffect(() => {
-    const mesh = meshRef.current;
-    if (!mesh) return undefined;
-    const random = seededRandom((site === 'maitri' ? 1291 : 4709) + kind.length * 77);
-    const dummy = new THREE.Object3D();
-    const color = new THREE.Color();
-    let placed = 0;
-
-    for (let attempt = 0; attempt < count * 5 && placed < count; attempt += 1) {
-      const angle = random() * Math.PI * 2;
-      const radius = kind === 'mountain' ? 65 + random() * 13 : 20 + random() * 41;
-      const x = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      if (kind !== 'mountain' && Math.abs(x) < (site === 'bharati' ? 28 : 15) && Math.abs(z) < (site === 'bharati' ? 18 : 11)) continue;
-      if (Math.abs(x)<6 && z>0 && z<(site==='bharati'?33:23)) continue;
-      if (site === 'maitri' && Math.hypot((x - 38) * 0.92, (z + 27) * 1.08) < 17) continue;
-      if (site === 'bharati' && z < coastlineZ(x) + 2) continue;
-
-      if(kind!=='mountain'&&!infrastructureClear(site,x,z))continue;
-      const base = terrainHeight(site, x, z);
-      const size = kind === 'mountain' ? 2.8 + random() * 4.8 : kind === 'snow' ? 1 : 1.1 + random() * 2.6;
-      dummy.position.set(x, base + (kind === 'snow' ? 0.12 : kind === 'mountain' ? size * 0.48 : size * 0.28), z);
-      dummy.rotation.set((random() - 0.5) * 0.3, random() * Math.PI * 2, (random() - 0.5) * 0.3);
-
-      if (kind === 'snow') {
-        dummy.scale.set(2.8 + random() * 6.4, 0.12 + random() * 0.28, 0.7 + random() * 1.3);
-      } else if (kind === 'mountain') {
-        dummy.scale.set(size * (1.0 + random() * 0.45), size * (0.7 + random() * 0.55), size * (0.8 + random() * 0.5));
-      } else {
-        dummy.scale.set(size * (0.8 + random() * 0.55), size * (0.45 + random() * 0.3), size * (0.7 + random() * 0.55));
-      }
-
-      dummy.updateMatrix();
-      mesh.setMatrixAt(placed, dummy.matrix);
-      if (kind !== 'snow') {
-        const lightness = kind === 'mountain' ? .38 + random() * .2 : .28 + random() * .18;
-        color.setHSL(site === 'maitri' ? 0.11 : 0.55, 0.09 + random() * 0.11, lightness);
-        mesh.setColorAt(placed, color);
-      }
-      placed += 1;
-    }
-
-    mesh.count = placed;
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    return undefined;
-  }, [site, kind, count]);
-
-  useEffect(() => () => {
-    geometry.dispose();
-    material.dispose();
-    rockTexture.dispose();
-  }, [geometry, material, rockTexture]);
-
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, count]}
-      castShadow={kind !== 'snow'}
-      receiveShadow
-      frustumCulled={false}
-    />
-  );
 }
 
 function FjordWater() {
@@ -356,8 +252,6 @@ export default function PolarEnvironment({ site = 'maitri', isDaylight = true, v
         />
       </mesh>
 
-      <InstanceField site={site} kind="rock" count={54} snowCoverage={coverage}/>
-      <InstanceField site={site} kind="mountain" count={34} snowCoverage={coverage}/>
       {site === 'bharati' && <FjordWater />}
 
       {isDaylight ? (
@@ -391,19 +285,3 @@ export default function PolarEnvironment({ site = 'maitri', isDaylight = true, v
   );
 }
 
-// Replays the deterministic rock placement so walking and visuals share obstacles.
-export function getRockObstacles(site) {
- const random=seededRandom((site==='maitri'?1291:4709)+4*77),result=[];
- for(let attempt=0;attempt<54*5&&result.length<54;attempt++){
-  const a=random()*Math.PI*2,r=20+random()*41,x=Math.cos(a)*r,z=Math.sin(a)*r;
-  if(Math.abs(x)<(site==='bharati'?28:15)&&Math.abs(z)<(site==='bharati'?18:11))continue;
-  if(Math.abs(x)<6&&z>0&&z<(site==='bharati'?33:23))continue;
-  if(site==='maitri'&&Math.hypot((x-38)*.92,(z+27)*1.08)<17)continue;
-  if(site==='bharati'&&z<coastlineZ(x)+2)continue;
-  if(!infrastructureClear(site,x,z))continue;
-  const base=terrainHeight(site,x,z),size=1.1+random()*2.6;random();random();random();
-  const sx=size*(.8+random()*.55),sy=size*(.45+random()*.3),sz=size*(.7+random()*.55);random();random();
-  result.push({minX:x-sx*.65,maxX:x+sx*.65,minZ:z-sz*.65,maxZ:z+sz*.65,minY:base-size*.4,maxY:base+size*.28+sy*.8});
- }
- return result;
-}

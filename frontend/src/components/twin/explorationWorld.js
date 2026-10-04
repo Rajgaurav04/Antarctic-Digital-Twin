@@ -1,5 +1,5 @@
 import { BUILDINGS, getFurniture, getPartitionBoxes, partitionAABB, furnitureAABB } from './stationLayout';
-import { terrainHeight, coastlineZ, getRockObstacles } from './PolarEnvironment';
+import { terrainHeight, coastlineZ } from './PolarEnvironment';
 
 const wall=(minX,maxX,minZ,maxZ,minY,maxY)=>({minX,maxX,minZ,maxZ,minY,maxY});
 export function getExplorationWorld(site){
@@ -7,7 +7,6 @@ export function getExplorationWorld(site){
  const obstacles=[...getPartitionBoxes(site).map(partitionAABB),...getFurniture(site).map(furnitureAABB),
   wall(-hx-.2,-hx+.2,-hz,hz,b.floor,b.roof),wall(hx-.2,hx+.2,-hz,hz,b.floor,b.roof),
   wall(-hx,hx,-hz-.2,-hz+.2,b.floor,b.roof),wall(-hx,-1.2,hz-.2,hz+.2,b.floor,b.roof),wall(1.2,hx,hz-.2,hz+.2,b.floor,b.roof),
-  ...getRockObstacles(site),
  ];
  // Outdoor logistics equipment is collidable, independently of UI overlay state.
  const boxes=site==='maitri'?[[-25,-3,8,6,2.8],[-18,6,6,2.8,2.8],[21,-8,6,2.8,2.8],[32,-23,3.5,3,2.8],[-27,17,12,15,2.4],[-36,32,6,2.8,2.8],...Array.from({length:3},(_,i)=>[23+i*7,22,6,2.8,2.8])]:[[-38,17,12,15,2.4],[37,12,10,2.8,2.8],[37,17,6,2.8,2.8],[36,-34,3.5,3,2.8],[-36,32,6,2.8,2.8]];

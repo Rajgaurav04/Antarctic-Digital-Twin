@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import {CanvasTexture} from 'three';
 
-const FAR_COUNT = 1200;
-const MID_COUNT = 860;
-const STREAK_COUNT = 320;
+const FAR_COUNT = 1600;
+const MID_COUNT = 1200;
+const STREAK_COUNT = 600;
 
 const FAR_XZ_LIMIT = 58;
 const MID_XZ_LIMIT = 43;
@@ -96,9 +97,17 @@ export default function BlizzardParticles({
   windDirection = 270,
   isReducedMotion = false,
 }) {
+  const flakeTexture = useMemo(() => {
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=64;
+    const ctx=canvas.getContext('2d'),gradient=ctx.createRadialGradient(32,32,2,32,32,30);
+    gradient.addColorStop(0,'rgba(255,255,255,1)');gradient.addColorStop(.45,'rgba(255,255,255,.85)');gradient.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=gradient;ctx.fillRect(0,0,64,64);return new CanvasTexture(canvas);
+  },[]);
+  useEffect(()=>()=>flakeTexture.dispose(),[flakeTexture]);
   const farRef = useRef();
   const midRef = useRef();
   const streakRef = useRef();
+  const nearPointsRef = useRef();
   const nearGroupRef = useRef();
 
   const layers = useMemo(() => ({
@@ -112,16 +121,16 @@ export default function BlizzardParticles({
       NEAR_Y_MAX,
       true,
     ),
-  }), []);
+  }), [FAR_COUNT, MID_COUNT, STREAK_COUNT]);
 
   const safeWindSpeed = Number.isFinite(windSpeed) ? Math.max(0, windSpeed) : 30;
   const normalizedWind = Math.min(1, safeWindSpeed / 120);
   const density = useMemo(() => {
     const motionScale = isReducedMotion ? 0.62 : 1;
     return {
-      far: Math.round((440 + normalizedWind * 760) * motionScale * snowfall),
-      mid: Math.round((180 + normalizedWind * 680) * motionScale * snowfall),
-      near: isReducedMotion ? 0 : Math.round((48 + normalizedWind * 272) * snowfall),
+      far: Math.round((440 + normalizedWind * 1160) * motionScale * snowfall),
+      mid: Math.round((180 + normalizedWind * 1020) * motionScale * snowfall),
+      near: isReducedMotion ? 0 : Math.round((48 + normalizedWind * 552) * snowfall),
     };
   }, [isReducedMotion, normalizedWind, snowfall]);
 
@@ -137,12 +146,14 @@ export default function BlizzardParticles({
     farRef.current?.geometry.setDrawRange(0, density.far);
     midRef.current?.geometry.setDrawRange(0, density.mid);
     streakRef.current?.geometry.setDrawRange(0, density.near * 2);
+    nearPointsRef.current?.geometry.setDrawRange(0, density.near);
   }, [density]);
 
   useFrame((state, frameDelta) => {
     // Keep updates bounded after a suspended tab resumes.
     const delta = Math.min(frameDelta, 0.05);
-    const windFactor = Math.min(3.8, 0.45 + safeWindSpeed * 0.032);
+    const gust=1+normalizedWind*.18*Math.sin(state.clock.elapsedTime*1.7);
+    const windFactor = Math.min(3.8, 0.45 + safeWindSpeed * 0.032)*gust;
 
     if (nearGroupRef.current) {
       nearGroupRef.current.position.x = state.camera.position.x;
@@ -159,9 +170,9 @@ export default function BlizzardParticles({
 
     const near = layers.near;
     const { positions, drift, fall, streakLength, linePositions } = near;
-    const horizontalRate = 13 * windFactor;
+    const horizontalRate = 17 * windFactor;
     const fallRate = 4.1;
-    const streakScale = 0.34 + windFactor * 0.42;
+    const streakScale = 0.7 + windFactor * 0.7;
     for (let i = 0; i < density.near; i++) {
       const index = i * 3;
       const x = positions[index] + windVector.x * drift[i] * horizontalRate * delta;
@@ -198,63 +209,74 @@ export default function BlizzardParticles({
       linePositions[lineIndex + 5] = wrappedZ - velocityZ * inverseLength * segmentLength;
     }
     streakRef.current.geometry.attributes.position.needsUpdate = true;
+    nearPointsRef.current.geometry.attributes.position.needsUpdate = true;
   });
 
   return (
     <>
       <points ref={farRef} frustumCulled={false}>
-        <bufferGeometry>
+        <bufferGeometry key={`far-${FAR_COUNT}`}>
           <bufferAttribute
             attach="attributes-position"
-            count={FAR_COUNT}
-            array={layers.far.positions}
-            itemSize={3}
+            args={[layers.far.positions,3]}
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.055}
+          map={flakeTexture}
+          alphaTest={0.03}
+          size={0.12}
           color="#dbeafe"
           transparent
-          opacity={0.24}
+          opacity={0.65}
+          fog={false}
+          toneMapped={false}
           depthWrite={false}
           sizeAttenuation
         />
       </points>
 
       <points ref={midRef} frustumCulled={false}>
-        <bufferGeometry>
+        <bufferGeometry key={`mid-${MID_COUNT}`}>
           <bufferAttribute
             attach="attributes-position"
-            count={MID_COUNT}
-            array={layers.mid.positions}
-            itemSize={3}
+            args={[layers.mid.positions,3]}
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.11 + normalizedWind * 0.035}
+          map={flakeTexture}
+          alphaTest={0.03}
+          size={0.18 + normalizedWind * 0.09}
           color={safeWindSpeed > 85 ? '#f0f9ff' : '#dbeafe'}
           transparent
-          opacity={0.52}
+          opacity={0.9}
+          fog={false}
+          toneMapped={false}
           depthWrite={false}
           sizeAttenuation
         />
       </points>
 
       <group ref={nearGroupRef} frustumCulled={false}>
+        <points ref={nearPointsRef} frustumCulled={false}>
+          <bufferGeometry key={`near-flakes-${STREAK_COUNT}`}>
+            <bufferAttribute attach="attributes-position" args={[layers.near.positions,3]}/>
+          </bufferGeometry>
+          <pointsMaterial map={flakeTexture} alphaTest={.03} color="#f3f8fc" size={2.4} sizeAttenuation={false} transparent opacity={.75} fog={false} toneMapped={false} depthWrite={false}/>
+        </points>
         <lineSegments ref={streakRef} frustumCulled={false}>
-          <bufferGeometry>
+          <bufferGeometry key={`near-${STREAK_COUNT}`}>
             <bufferAttribute
               attach="attributes-position"
-              count={STREAK_COUNT * 2}
-              array={layers.near.linePositions}
-              itemSize={3}
+              args={[layers.near.linePositions,3]}
             />
           </bufferGeometry>
           <lineBasicMaterial
             color="#e0f2fe"
             transparent
-            opacity={0.4}
-            depthWrite={false}
+            opacity={0.8}
+            fog={false}
+          toneMapped={false}
+          depthWrite={false}
           />
         </lineSegments>
       </group>

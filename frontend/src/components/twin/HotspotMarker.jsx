@@ -41,7 +41,7 @@ function Callout({label,status,value,alert}){
   const canvas=document.createElement('canvas');canvas.width=WIDTH*4;canvas.height=HEIGHT*4;
   const ctx=canvas.getContext('2d');ctx.scale(4,4);
   const accent=alert?'#b84338':routeColor(status);
-  ctx.fillStyle='rgba(246,249,251,.98)';ctx.strokeStyle=alert?'#d2968d':'#829ba9';ctx.lineWidth=.8;
+  ctx.fillStyle='#f6f9fb';ctx.strokeStyle=alert?'#b84338':'#567583';ctx.lineWidth=1.2;
   ctx.beginPath();ctx.roundRect(.5,.5,WIDTH-1,HEIGHT-1,7);ctx.fill();ctx.stroke();
   ctx.fillStyle=accent;ctx.beginPath();ctx.roundRect(5,8,3,HEIGHT-16,1.5);ctx.fill();
   const category=alert?status:({WATER:'WATER SUPPLY',LOGISTICS:'CARGO & STORES',HEAT:'HEATING LOOP',POWER:'FUEL & POWER'})[status.split(' ')[0]]||'SYSTEM / '+status;
@@ -54,7 +54,7 @@ function Callout({label,status,value,alert}){
   const result=new THREE.CanvasTexture(canvas);result.colorSpace=THREE.SRGBColorSpace;return result;
  },[label,status,value,alert]);
  useEffect(()=>()=>texture.dispose(),[texture]);
- return <mesh renderOrder={1000}><planeGeometry args={[4.2,4.2*HEIGHT/WIDTH]}/><meshBasicMaterial map={texture} transparent depthTest={false} depthWrite={false} toneMapped={false}/></mesh>;
+ return <mesh renderOrder={1000}><planeGeometry args={[4.2,4.2*HEIGHT/WIDTH]}/><meshBasicMaterial map={texture} transparent fog={false} depthTest={false} depthWrite={false} toneMapped={false}/></mesh>;
 }
 export default function HotspotMarker({position,label,subsystemCode,status='NOMINAL',metricValue,metricUnit,onClick,isModalOpen=false,activeHotspot=null,reducedMotion=false,labelVisibility=true,modelBounds=null}){
  const [hovered,setHovered]=useState(false);
@@ -92,8 +92,8 @@ export default function HotspotMarker({position,label,subsystemCode,status='NOMI
  });
  const value=metricValue===undefined?'':`${typeof metricValue==='number'?metricValue.toFixed(1):metricValue} ${metricUnit||''}`;
  return <group ref={groupRef} position={position} onClick={e=>{e.stopPropagation();onClick?.(subsystemCode);}} onPointerOver={e=>{e.stopPropagation();setHovered(true);document.body.style.cursor='pointer';}} onPointerOut={()=>{setHovered(false);document.body.style.cursor='auto';}}>
-  <mesh ref={dotMeshRef} renderOrder={1001}><sphereGeometry args={[.13,12,12]}/><meshStandardMaterial ref={dotRef} color={accent} emissive={accent} transparent depthTest={false} depthWrite={false} toneMapped={false}/><Billboard><mesh renderOrder={1001}><ringGeometry args={[.15,.22,24]}/><meshBasicMaterial color='#f5f9fb' transparent opacity={.95} depthTest={false} depthWrite={false} toneMapped={false}/></mesh></Billboard></mesh>
-  {!hide&&<line ref={leaderRef} frustumCulled={false} renderOrder={999}><bufferGeometry><bufferAttribute attach="attributes-position" args={[points,3]}/></bufferGeometry><lineBasicMaterial color={accent} transparent opacity={.75} depthTest={false} depthWrite={false}/></line>}
+  <mesh ref={dotMeshRef} renderOrder={1001}><sphereGeometry args={[.13,12,12]}/><meshStandardMaterial ref={dotRef} color={accent} emissive={accent} transparent fog={false} depthTest={false} depthWrite={false} toneMapped={false}/><Billboard><mesh renderOrder={1001}><ringGeometry args={[.15,.22,24]}/><meshBasicMaterial color='#f5f9fb' transparent opacity={.95} fog={false} depthTest={false} depthWrite={false} toneMapped={false}/></mesh></Billboard></mesh>
+  {!hide&&<line ref={leaderRef} frustumCulled={false} renderOrder={999}><bufferGeometry><bufferAttribute attach="attributes-position" args={[points,3]}/></bufferGeometry><lineBasicMaterial color={accent} transparent opacity={.95} toneMapped={false} fog={false} depthTest={false} depthWrite={false}/></line>}
   {!hide&&<Billboard ref={labelRef} position={[0,1,0]}><Callout label={label} status={status} value={value} alert={alert}/></Billboard>}
  </group>;
 }

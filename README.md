@@ -217,3 +217,9 @@ Triaxial vibration is simulated in **nm/s²** as √(Z² + N² + E²). The demo 
 | Blizzard exercise | 1,732–86,602 | 2,000–92,000 |
 
 The current simulator selects calm, ambient or blizzard based on wind and the active exercise. The seasonal envelope is documented for reference, not driven by a sea-ice model. Blizzard magnitude varies with wind severity within its band. Earlier vibration history retains its original unit in reading metadata. Abnormal cards and affected workspace sections show red indicators; failures such as a disabled trace heater are marked even when zero is inside the numeric sensor range.
+
+### Blizzard scene and terrain
+
+An active blizzard exercise overrides mild/cold scene previews. Snow particles and fast wind-aligned streaks show blowing snow; reduced-motion preferences retain a static snow field. Floating sensor cards and pointer lines stay crisp and unaffected by atmospheric fog.
+
+Oversized scattered boulders have been removed. Continuous bedrock rises and snowfields interpret Maitri’s Schirmacher Oasis setting and Bharati’s coastal promontory in Larsemann Hills, retaining the lake and coastal water. This is an illustrative reconstruction, not surveyed terrain. Setting reference: [NCPOR Antarctic stations](https://npdc.ncpor.res.in/npdc/antarctica_home.action).
