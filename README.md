@@ -7,7 +7,7 @@ A working prototype for exploring and monitoring India's Antarctic research stat
 ## Features
 
 - Maitri and Bharati operations dashboards, charts, sensor details and alerts.
-- Interactive 3D models with orbit, pan, zoom, fullscreen and free-flight spectate mode.
+- Interactive 3D models with orbit, pan, zoom, fullscreen and smooth keyboard movement in the normal view.
 - Thirteen guided tour stops per station, explaining systems and opening relevant interiors.
 - Animated water, fuel, electricity, heating and cargo workflows.
 - Incident exercises: blizzard, water-pipe freeze, generator trip and glycol pressure loss.
@@ -187,7 +187,7 @@ README.md                        Setup and usage instructions
 1. Choose Maitri or Bharati on the dashboard.
 2. Open the 3D twin and select a workflow to follow its route.
 3. Select **Auto Tour** for a guided introduction; use Previous, Next, Pause and Resume.
-4. Use **Interior cutaway** for represented rooms, or **Spectate** to fly freely.
+4. Use **Interior cutaway** for represented rooms, and move directly in the normal view with **W/A/S/D**, **Space** (up), **Ctrl** (down) and **Shift** (boost).
 5. Try the **WEATHER** controls for scene previews.
 6. Open **Telemetry** and run an incident exercise. Observe the affected equipment and readings, then restore nominal state.
 
@@ -204,3 +204,16 @@ Windows instructions and launchers were prepared on macOS; an actual Windows exe
 - [Open-Meteo](https://open-meteo.com/)
 
 The project retains its upstream Git history from [Nishant-095/Antarctic-Digital-Twin](https://github.com/Nishant-095/Antarctic-Digital-Twin).
+
+### Vibration and exercise indicators
+
+Triaxial vibration is simulated in **nm/s²** as √(Z² + N² + E²). The demo envelopes below were supplied for this prototype; they are not independently validated station measurements or engineering safety limits.
+
+| Simulation band | Maitri (nm/s²) | Bharati (nm/s²) |
+| --- | --- | --- |
+| Dead calm | 7.1–22 | 8.5–25 |
+| Ambient | 22–115 | 25–140 |
+| Seasonal reference | 173–866 | 220–950 |
+| Blizzard exercise | 1,732–86,602 | 2,000–92,000 |
+
+The current simulator selects calm, ambient or blizzard based on wind and the active exercise. The seasonal envelope is documented for reference, not driven by a sea-ice model. Blizzard magnitude varies with wind severity within its band. Earlier vibration history retains its original unit in reading metadata. Abnormal cards and affected workspace sections show red indicators; failures such as a disabled trace heater are marked even when zero is inside the numeric sensor range.

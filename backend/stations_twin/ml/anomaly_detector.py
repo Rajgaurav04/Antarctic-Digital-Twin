@@ -41,7 +41,7 @@ class AntarcticMLDetector:
         'lake_pipe_temp': (4.0, 1.2),
         'lake_flow_rate': (42.0, 3.0),
         'trace_heater_kw': (18.5, 2.0),
-        'vibration_index': (0.42, 0.15),
+        'vibration_index': (65.0, 24.0),
     }
 
     BHARATI_NOMINALS = {
@@ -52,7 +52,7 @@ class AntarcticMLDetector:
         'glycol_supply_temp': (60.2, 1.5),
         'glycol_pressure': (3.05, 0.2),
         'glycol_flow_rate': (142.0, 6.0),
-        'vibration_index': (0.32, 0.12),
+        'vibration_index': (80.0, 30.0),
     }
 
     FEATURE_METADATA = {
@@ -66,7 +66,7 @@ class AntarcticMLDetector:
         'glycol_supply_temp': {'label': 'Glycol Supply Temp', 'unit': '°C'},
         'glycol_pressure': {'label': 'Glycol Pressure', 'unit': 'bar'},
         'glycol_flow_rate': {'label': 'Glycol Flow Rate', 'unit': 'L/min'},
-        'vibration_index': {'label': 'Vibration Index', 'unit': 'g'},
+        'vibration_index': {'label': 'Triaxial vibration (RSS)', 'unit': 'nm/s²'},
     }
 
     _models = {}

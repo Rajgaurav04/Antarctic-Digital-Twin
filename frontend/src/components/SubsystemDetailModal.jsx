@@ -1,3 +1,4 @@
+import {sensorWarning} from './dashboard/data';
 import React, {useState} from 'react';
 import { X, Cpu, Gauge, Sliders } from 'lucide-react';
 import useDialogFocus from '../hooks/useDialogFocus';
@@ -134,7 +135,7 @@ export default function SubsystemDetailModal({
                     sensors.map((s) => {
                       const valDisplay = typeof s.current_value === 'number'
                         ? (s.sensor_code === 'VIBRATION_INDEX'
-                            ? s.current_value.toFixed(3)
+                            ? s.current_value.toLocaleString('en-IN',{maximumFractionDigits:1})
                             : (s.sensor_code === 'FUEL_BURN_RATE' || s.sensor_code === 'GLYCOL_PRESSURE')
                             ? s.current_value.toFixed(2)
                             : s.current_value.toFixed(1))
@@ -144,7 +145,7 @@ export default function SubsystemDetailModal({
                         <tr key={s.id || s.sensor_code} className={`transition-colors ${tableRowHover}`}>
                           <td className={`p-2 font-bold ${isDark ? 'text-slate-200' : 'text-black'}`}>{s.sensor_code}</td>
                           <td className={`p-2 ${subText}`}>{s.name}</td>
-                          <td className={`p-2 text-right font-bold ${isDark ? 'text-white' : 'text-black'}`}>
+                          <td className={`p-2 text-right font-bold ${sensorWarning(s,telemetry)?'text-red-600':isDark ? 'text-white' : 'text-black'}`}>
                             {valDisplay}{' '}
                             <span className={`font-normal ${subText}`}>{s.unit}</span>
                           </td>
@@ -154,12 +155,12 @@ export default function SubsystemDetailModal({
                         <td className="p-2 text-right">
                           <span
                             className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                              s.is_anomaly
+                              sensorWarning(s,telemetry)
                                 ? isDark ? 'bg-rose-950 text-rose-300 border border-rose-700 animate-status-blink' : 'bg-rose-100 text-rose-800 border border-rose-300 animate-status-blink'
                                 : isDark ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                             }`}
                           >
-                            {s.is_anomaly ? 'ANOMALY' : 'NOMINAL'}
+                            {sensorWarning(s,telemetry) ? 'ANOMALY' : 'NOMINAL'}
                           </span>
                         </td>
                       </tr>

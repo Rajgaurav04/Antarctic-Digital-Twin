@@ -38,3 +38,5 @@
 .dt-page .station-workspace button{font-size:calc(14px * var(--twin-font-scale));line-height:1.4;min-height:34px;}
 .dt-waypoint-card{flex-basis:232px;min-height:104px;}
 .dt-metric-card>strong{display:flex;align-items:baseline;gap:5px;flex-wrap:wrap;}.dt-metric-card small{white-space:nowrap;}
+
+.dt-danger-value,.dt-danger-value small{color:var(--danger)!important;}

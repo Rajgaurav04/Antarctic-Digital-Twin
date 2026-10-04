@@ -22,3 +22,15 @@
 .desk-scenario .desk-primary{width:auto;min-height:32px;padding:7px 12px;font-size:calc(12px * var(--dashboard-type-scale, 1));margin:0;}
 .desk-exercise-footer{margin-top:14px;padding-top:14px;}.desk-exercise-footer p{font-size:calc(12px * var(--dashboard-type-scale, 1));}
 @media(max-width:650px){.desk-scenario{grid-template-columns:18px minmax(0,1fr);gap:8px;}.desk-scenario .desk-primary{grid-column:2;justify-self:start;}.desk-scenario p{font-size:calc(11px * var(--dashboard-type-scale, 1));}}
+
+/* Abnormal data stays unmistakable in both themes without flashing. */
+.desk-reading.is-warning,.desk-metric.is-warning,.desk-panel.is-warning{border:2px solid var(--danger);box-shadow:inset 4px 0 0 var(--danger);background:color-mix(in srgb,var(--danger) 7%,var(--paper-panel));}
+.desk-reading.is-warning>strong,.desk-reading.is-warning>strong small,.desk-metric.is-warning>strong,.desk-metric.is-warning>strong small,.desk-danger-value,.desk-danger-value small{color:var(--danger)!important;}
+.desk-reading.is-warning .desk-status{font-weight:600;color:var(--danger);}
+.desk-alert-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--danger);margin-left:10px;flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 15%,transparent);}
+.desk-section-intro .desk-alert-dot{margin:0 9px 2px 0;}
+.desk-subnav button{display:inline-flex;align-items:center;}
+.desk-rail nav i{width:9px;height:9px;flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--danger) 18%,transparent);}
+.desk-rail nav button[aria-current] i{background:#ff7c73;box-shadow:0 0 0 3px #ff7c7326;}
+
+.desk-reading .desk-status{white-space:normal;line-height:1.5;}

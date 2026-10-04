@@ -11,6 +11,22 @@ class AntarcticSimulator:
     Models thermodynamic, electrical, and structural behaviors of Maitri & Bharati stations.
     """
 
+    @staticmethod
+    def _triaxial_vibration(slug, wind, incident):
+        """Synthetic RSS acceleration in nm/s² using user-supplied demo bands."""
+        bands = ({'calm': (7.1, 22), 'ambient': (22, 115), 'seasonal': (173, 866), 'blizzard': (1732, 86602)}
+                 if slug == 'maitri' else
+                 {'calm': (8.5, 25), 'ambient': (25, 140), 'seasonal': (220, 950), 'blizzard': (2000, 92000)})
+        band = 'blizzard' if incident == 'BLIZZARD_ALERT' or wind >= 90 else 'ambient' if wind >= 5 else 'calm'
+        low, high = bands[band]
+        severity = min(1, max(0, (wind - 90) / 40)) if band == 'blizzard' else min(1, wind / 60)
+        magnitude = round(min(high, max(low, low + (high-low) * (severity + random.uniform(-.025, .025)))), 1)
+        weights = [random.uniform(.2, .5), random.uniform(.5, .9), random.uniform(.5, .9)]
+        norm = math.sqrt(sum(v*v for v in weights))
+        axes = dict(zip(('vertical', 'north_south', 'east_west'), [round(magnitude*v/norm, 3) for v in weights]))
+        return magnitude, {'unit': 'nm/s²', 'axes': axes, 'magnitude': magnitude, 'band': band, 'bands': bands,
+                           'source': 'User-provided prototype simulation envelopes; not measured station data'}
+
     # In-memory incident override state per station slug
     active_incidents = {
         'maitri': None,
@@ -90,7 +106,7 @@ class AntarcticSimulator:
         indoor_temp = round(20.4 + random.uniform(-0.3, 0.3), 1)
 
         # Structural Vibration during katabatic winds
-        vibration_index = round(0.40 + (max(0.0, wind_speed - 40.0) * 0.035) + random.uniform(0.01, 0.05), 3)
+        vibration_index, vibration = cls._triaxial_vibration('maitri', wind_speed, incident)
 
         # Battery Energy Storage System (BESS) - 150 kWh Station UPS Bank
         # Float charged in nominal ops (96-98%), provides peak buffer during high load or blizzard
@@ -107,6 +123,7 @@ class AntarcticSimulator:
         battery_temp = round(20.2 + random.uniform(-0.2, 0.2), 1)
 
         # Update Station Object
+        station.weather_condition = 'Katabatic blizzard / exercise' if incident == 'BLIZZARD_ALERT' else ('Clear Sky / Polar Sun' if station.slug == 'maitri' else 'Overcast')
         station.ambient_temp = ambient_temp
         station.wind_speed = wind_speed
         station.surface_pressure = surface_pressure
@@ -150,7 +167,7 @@ class AntarcticSimulator:
 
         station.operational_status = status
         station.active_alert_count = len(alerts)
-        station.save(update_fields=['ambient_temp', 'wind_speed', 'surface_pressure', 'total_power_kw', 'fuel_reserve_days', 'primary_thermal_temp', 'trace_heating_active', 'operational_status', 'active_alert_count'])
+        station.save(update_fields=['weather_condition', 'ambient_temp', 'wind_speed', 'surface_pressure', 'total_power_kw', 'fuel_reserve_days', 'primary_thermal_temp', 'trace_heating_active', 'operational_status', 'active_alert_count'])
 
         # Update Sensors & Subsystems in DB
         cls._persist_telemetry(station, {
@@ -185,6 +202,7 @@ class AntarcticSimulator:
             'fuel_burn_rate': fuel_burn_rate,
             'indoor_temp': indoor_temp,
             'vibration_index': vibration_index,
+            'triaxial_vibration': vibration,
             'pipe_status': pipe_status,
             'battery_soc': battery_soc,
             'battery_voltage': battery_voltage,
@@ -247,10 +265,7 @@ class AntarcticSimulator:
 
         # Structural Aerodynamic Vibration (Bharati is raised on structural stilts)
         # Katabatic wind causes micro-oscillations on the stilted chassis
-        if wind_speed > 60:
-            vibration_index = round(0.55 + ((wind_speed - 60.0) * 0.055) + random.uniform(0.02, 0.05), 3)
-        else:
-            vibration_index = round(0.28 + (wind_speed * 0.004) + random.uniform(0.01, 0.03), 3)
+        vibration_index, vibration = cls._triaxial_vibration('bharati', wind_speed, incident)
 
         # Indoor Cabin Temperature
         indoor_temp = round(21.2 + random.uniform(-0.2, 0.2), 1)
@@ -276,6 +291,7 @@ class AntarcticSimulator:
         battery_temp = round(21.0 + random.uniform(-0.2, 0.2), 1)
 
         # Update Station Model
+        station.weather_condition = 'Katabatic blizzard / exercise' if incident == 'BLIZZARD_ALERT' else ('Clear Sky / Polar Sun' if station.slug == 'maitri' else 'Overcast')
         station.ambient_temp = ambient_temp
         station.wind_speed = wind_speed
         station.surface_pressure = surface_pressure
@@ -294,7 +310,7 @@ class AntarcticSimulator:
                 'code': 'BLIZZARD_ALERT',
                 'severity': 'EMERGENCY',
                 'title': 'Severe Katabatic Gale / Structural Oscillation Alert',
-                'message': f'Wind speeds peaked at {wind_speed} km/h. Structural stilt vibration at {vibration_index} mm/s².',
+                'message': f'Wind speeds peaked at {wind_speed} km/h. Structural stilt vibration at {vibration_index} nm/s².',
                 'action': 'SOP: Restrict stilted underfloor access; engage damper stabilizers; seal external aerodynamic dampers.'
             })
         elif wind_speed > 60:
@@ -329,7 +345,7 @@ class AntarcticSimulator:
 
         station.operational_status = status
         station.active_alert_count = len(alerts)
-        station.save(update_fields=['ambient_temp', 'wind_speed', 'surface_pressure', 'total_power_kw', 'fuel_reserve_days', 'primary_thermal_temp', 'trace_heating_active', 'operational_status', 'active_alert_count'])
+        station.save(update_fields=['weather_condition', 'ambient_temp', 'wind_speed', 'surface_pressure', 'total_power_kw', 'fuel_reserve_days', 'primary_thermal_temp', 'trace_heating_active', 'operational_status', 'active_alert_count'])
 
         # Persist Sensors & Subsystems
         cls._persist_telemetry(station, {
@@ -370,6 +386,7 @@ class AntarcticSimulator:
             'fuel_burn_rate': fuel_burn_rate,
             'indoor_temp': indoor_temp,
             'vibration_index': vibration_index,
+            'triaxial_vibration': vibration,
             'battery_soc': battery_soc,
             'battery_voltage': battery_voltage,
             'battery_current': battery_current,
@@ -405,10 +422,15 @@ class AntarcticSimulator:
                     is_anomaly = True
                 if sensor.safe_max is not None and val > sensor.safe_max:
                     is_anomaly = True
+                failed_sensors = {
+                    'LAKE_PIPE_FREEZE': {'TRACE_HEATER_KW', 'TRACE_HEATER_STATUS'},
+                    'CHP_GEN2_TRIP': {'CHP2_KW'},
+                }
+                is_anomaly = is_anomaly or code in failed_sensors.get(cls.active_incidents.get(station.slug), set())
                 sensor.is_anomaly = is_anomaly
                 sensors_to_update.append(sensor)
                 readings_to_create.append(
-                    SensorReading(sensor=sensor, timestamp=now, value=val, is_anomaly=is_anomaly)
+                    SensorReading(sensor=sensor, timestamp=now, value=val, is_anomaly=is_anomaly, metadata={'unit': sensor.unit, 'source': 'simulator'})
                 )
 
             # 2. Bulk update all sensors in ONE query

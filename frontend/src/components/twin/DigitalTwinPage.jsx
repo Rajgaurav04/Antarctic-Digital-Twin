@@ -46,7 +46,6 @@ export default function DigitalTwinPage({
   const [activeWaypoint, setActiveWaypoint] = useState(0);
   const [waypointRevision,setWaypointRevision]=useState(0);
   const [isTourActive, setIsTourActive] = useState(false);
-  const [isExploring, setIsExploring] = useState(false);
   const [isTelemetryDrawerOpen, setIsTelemetryDrawerOpen] = useState(false);
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
   const [clocks, setClocks] = useState({ utc: '', operational: '', solar: '' });
@@ -144,7 +143,7 @@ export default function DigitalTwinPage({
   };
   useEffect(() => {
     const changed = () => setIsBrowserFullscreen(Boolean(document.fullscreenElement));
-    const escape = e => { if (e.code === 'Escape' && !isExploring) setIsBrowserFullscreen(false); };
+    const escape = e => { if (e.code === 'Escape') setIsBrowserFullscreen(false); };
     document.addEventListener('fullscreenchange', changed);
     window.addEventListener('keydown', escape);
     const oldOverflow = document.body.style.overflow;
@@ -154,7 +153,7 @@ export default function DigitalTwinPage({
       window.removeEventListener('keydown', escape);
       document.body.style.overflow = oldOverflow;
     };
-  }, [isBrowserFullscreen, isExploring]);
+  }, [isBrowserFullscreen]);
 
   // Station Inspection Waypoints
   const maitriWaypoints = [
@@ -349,7 +348,6 @@ export default function DigitalTwinPage({
   // Keyboard navigation for waypoints (Left/Right arrow keys)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (isExploring) return;
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (e.key === 'ArrowRight') {
         setActiveWaypoint((prev) => Math.min(waypoints.length - 1, prev + 1));
@@ -359,7 +357,7 @@ export default function DigitalTwinPage({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [waypoints.length, isExploring]);
+  }, [waypoints.length]);
 
 
   return (
@@ -507,7 +505,7 @@ export default function DigitalTwinPage({
           <div className="dt-site-readouts" aria-label="Station summary">
             <div className="dt-readout">
               <span className="dt-readout-label"><Wind aria-hidden="true" /> WIND</span>
-              <strong>{windSpeed.toFixed(1)} <small>km/h</small></strong>
+              <strong className={activeIncident==='BLIZZARD_ALERT'?'dt-danger-value':''}>{windSpeed.toFixed(1)} <small>km/h</small></strong>
             </div>
             <div className="dt-readout">
               <span className="dt-readout-label"><Thermometer aria-hidden="true" /> THERMAL LOOP</span>
@@ -543,7 +541,6 @@ export default function DigitalTwinPage({
               waypointTrigger={`${stationSlug}-${activeWaypoint}-${waypointRevision}`}
               isModalOpen={isModalOpen}
               activeSubsystem={selectedSubsystem}
-              onExplorationChange={(active) => { setIsExploring(active); if (active) setIsTourActive(false); }}
             />
           </div>
 
@@ -579,7 +576,7 @@ export default function DigitalTwinPage({
                 </article>
                 <article className="dt-metric-card">
                   <span className="dt-card-label"><Wind aria-hidden="true" /> KATABATIC WIND</span>
-                  <strong>{windSpeed.toFixed(1)}<small> km/h</small></strong>
+                  <strong className={activeIncident==='BLIZZARD_ALERT'?'dt-danger-value':''}>{windSpeed.toFixed(1)}<small> km/h</small></strong>
                 </article>
                 <article className="dt-metric-card">
                   <span className="dt-card-label"><Gauge aria-hidden="true" /> FUEL AUTONOMY</span>
@@ -715,7 +712,6 @@ export default function DigitalTwinPage({
                   <span>{String(activeWaypoint + 1).padStart(2, '0')}</span> / {String(waypoints.length).padStart(2, '0')}
                 </span>
                 <button
-                  disabled={isExploring}
                   onClick={() => setIsTourActive((prev) => !prev)}
                   aria-pressed={isTourActive}
                   aria-label={isTourActive ? 'Pause guided station tour' : 'Start guided station tour'}
@@ -749,9 +745,7 @@ export default function DigitalTwinPage({
                   return (
                     <button
                       key={wp.id}
-                      disabled={isExploring}
                       onClick={() => {
-                        if (isExploring) return;
                         handleSelectWaypoint(idx);
                         if (isTourActive) setIsTourActive(false);
                       }}
