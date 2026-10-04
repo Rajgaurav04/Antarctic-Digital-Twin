@@ -48,6 +48,8 @@ class SceneBoundary extends React.Component {
 export default function StationCanvas({stationSlug,telemetry,onSelectHotspot,isFullscreen,onToggleFullscreen,cameraTargetPosition,cameraTargetLookAt,waypointTrigger,isModalOpen=false,activeSubsystem=null,onToggleTelemetry,isTourActive=false,onTourActiveChange}) {
  const controlsRef=useRef(),savedView=useRef(null),mapMarkerRef=useRef(),mapHeightRef=useRef();
  const [mapOpen,setMapOpen]=useState(false);
+ // Simulation motion is an explicit scene control, independent of OS camera-motion preferences.
+ const [sceneMotion,setSceneMotion]=useState(true);
  const [tourOpen,setTourOpen]=useState(false),[tourIndex,setTourIndex]=useState(0),[arrived,setArrived]=useState(false),[tourDone,setTourDone]=useState(false),[navigation,setNavigation]=useState(null),[flightRevision,setFlightRevision]=useState(0),[tourManualFlight,setTourManualFlight]=useState(false);
  const stops=useMemo(()=>stationTour(stationSlug),[stationSlug]);const tourStop=stops[tourIndex]||stops[0];
 const [weatherChoice,setWeatherChoice]=useState('auto');
@@ -89,7 +91,7 @@ const [weatherChoice,setWeatherChoice]=useState('auto');
  const selectedRoutes=WORKFLOWS[stationSlug].filter(r=>workflow==='all'||workflow===r.id);
  return <div className="station-workspace">
   <div className="station-commandbar" aria-label="Three-dimensional view controls">
-   <div className="station-control-group"><span className="station-tool-label">DISPLAY</span>{[['NORMAL','Real'],['THERMAL','Thermal IR'],['XRAY','X-ray']].map(([id,name])=><button key={id} aria-pressed={viewMode===id} onClick={()=>{onTourActiveChange?.(false);setViewMode(id);}}>{name}</button>)}<button aria-pressed={!day} onClick={()=>setDay(v=>!v)}>{day?<Sun/>:<Moon/>}{day?'Daylight':'Polar night'}</button></div>
+   <div className="station-control-group"><span className="station-tool-label">DISPLAY</span>{[['NORMAL','Real'],['THERMAL','Thermal IR'],['XRAY','X-ray']].map(([id,name])=><button key={id} aria-pressed={viewMode===id} onClick={()=>{onTourActiveChange?.(false);setViewMode(id);}}>{name}</button>)}<button aria-pressed={!day} onClick={()=>setDay(v=>!v)}>{day?<Sun/>:<Moon/>}{day?'Daylight':'Polar night'}</button><button aria-pressed={sceneMotion} aria-label={sceneMotion?'Pause flows and weather':'Play flows and weather'} title='Animate cargo arrows, pipe flows and snowfall' onClick={()=>setSceneMotion(v=>!v)}>{sceneMotion?'Motion on':'Motion paused'}</button></div>
    <div className="station-control-group"><span className="station-tool-label">INSPECT</span><button aria-pressed={cutaway} onClick={()=>cutaway?(setCutaway(false),preset(overview,target)):inspect()}>Interior cutaway</button>{cutaway&&!maitri&&<><button aria-pressed={floorLevel==='science'} onClick={()=>inspect('science')}>Science / services</button><button aria-pressed={floorLevel==='living'} onClick={()=>inspect('living')}>Living floor</button></>}</div>
    <div className="station-control-group station-camera-tools"><button aria-pressed={mapOpen} onClick={()=>{closeTour();setMapOpen(v=>!v);}}>Site map</button>{isFullscreen&&<><button aria-pressed={isTourActive} onClick={()=>onTourActiveChange?.(!isTourActive)}>{isTourActive?'Pause tour':'Auto tour'}</button><button onClick={onToggleTelemetry}>Telemetry</button></>}<button aria-label="Zoom in" onClick={()=>zoom(.8)}><ZoomIn/></button><button aria-label="Zoom out" onClick={()=>zoom(1.25)}><ZoomOut/></button><button aria-label="Reset camera" onClick={reset}><RotateCcw/></button><button aria-label={isFullscreen?'Exit fullscreen':'Fullscreen 3D view'} onClick={onToggleFullscreen}>{isFullscreen?<Minimize2/>:<Maximize2/>}</button></div>
   </div>
@@ -108,8 +110,8 @@ const [weatherChoice,setWeatherChoice]=useState('auto');
     <ambientLight intensity={viewMode==='THERMAL'?.3:day?.8:.5} color="#dcecf5"/>
     <directionalLight position={[-36,48,40]} intensity={viewMode==='THERMAL'?.6:day?weather.sun:.65} color={day?'#fff5df':'#829bd3'} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-camera-far={150} shadow-camera-left={-70} shadow-camera-right={70} shadow-camera-top={70} shadow-camera-bottom={-70}/>
     <directionalLight position={[15,-8,-15]} intensity={day?.32:.12} color="#c7e4f1"/>
-    <BlizzardParticles key="storm-snow-v2" snowfall={weather.snowfall} windSpeed={wind} windDirection={direction} isReducedMotion={reduced}/>
-    <Suspense fallback={null}><Model weather={weather} telemetry={telemetry} onSelectHotspot={onSelectHotspot} viewMode={viewMode} isDaylight={day} isModalOpen={isModalOpen} activeSubsystem={activeSubsystem} cutaway={cutaway} floorLevel={floorLevel} workflow={workflow} reducedMotion={reduced}/></Suspense>
+    <BlizzardParticles key="storm-snow-v2" snowfall={weather.snowfall} windSpeed={wind} windDirection={direction} isReducedMotion={!sceneMotion}/>
+    <Suspense fallback={null}><Model weather={weather} telemetry={telemetry} onSelectHotspot={onSelectHotspot} viewMode={viewMode} isDaylight={day} isModalOpen={isModalOpen} activeSubsystem={activeSubsystem} cutaway={cutaway} floorLevel={floorLevel} workflow={workflow} reducedMotion={!sceneMotion}/></Suspense>
    </Canvas>
    </SceneBoundary>
    {mapOpen&&<SiteNavigator site={stationSlug} markerRef={mapMarkerRef} heightRef={mapHeightRef} onClose={()=>setMapOpen(false)} onInspect={(position,look)=>{setCutaway(false);preset(position,look);}}/>}

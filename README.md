@@ -237,3 +237,9 @@ Both scenes include framed glazing, insulated panel joints, support braces and a
 Use **Site map** to see facility locations, connected routes, a north arrow, a scale bar and your camera position. Select a numbered facility to move closer; use **Interior cutaway** to inspect equipment inside the station. The map occupies a separate rail so it does not cover the model.
 
 Small fittings use instanced geometry and hide at long viewing distances to limit rendering cost. Terrain includes finer surface detail. Graphics acceleration is required; performance depends on the device. These are illustrative prototype details based on the station facilities described by NCPOR, not measured or certified engineering layouts.
+
+### Windows: animated routes and blizzard
+
+Cargo arrows, pipe flow markers and snowfall animate by default. **Motion on** in the 3D display controls pauses/resumes these simulations. Windows' reduced-motion preference still limits camera transitions, but no longer freezes the operational scene. An inactive browser tab may suspend rendering until it becomes visible again.
+
+On an existing Windows clone, stop the frontend, run `git pull origin main`, then restart it with `npm run dev` from the `frontend` directory. Refresh the browser to load the updated controls. Select a workflow to display its animated route, and select **Blizzard** (or run the blizzard exercise) for storm motion.
