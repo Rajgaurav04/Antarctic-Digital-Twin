@@ -94,6 +94,10 @@ export function getFurniture(site) {
   });
 }
 export function furnitureAABB(f){return {minX:f.x-f.w/2,maxX:f.x+f.w/2,minZ:f.z-f.d/2,maxZ:f.z+f.d/2,minY:f.y,maxY:f.y+f.h};}
+// Potable supply terminates at a rendered kitchen tap (Equipment kitchen nozzle).
+// Heating connects to the rendered room radiator and returns to the plant.
+// Route bends are explicit: no splines or interpolated shortcuts through buildings.
+// Connections use the rendered tank manifold, pump, plant and distribution positions.
 // Tank caps, branch pipes, manifold and workflow outlet share these coordinates.
 export const FUEL_FARMS = {
   maitri: { position: [-27,0,17], count: 6 },
@@ -105,15 +109,15 @@ export function getFuelOutlet(site) {
 }
 export const WORKFLOWS = {
   maitri: [
-    {id:'water',name:'LAKE → TREATMENT → HABITATION',color:'#48c7e6',code:'WATER_INTAKE',nodes:[[32,.8,-23],[25,.8,-16],[21,.8,-8],[11,1,-8],[8,2,-4]],labelIndices:[0,1,2,4],labels:['Lake pump','Trace heated intake','Water treatment','Potable distribution']},
-    {id:'power',name:'FUEL → GENERATORS → MLVD / UPS',color:'#efc45f',code:'POWER_CHP',nodes:[getFuelOutlet('maitri'),[-19,1.2,15.47],[-19,1.2,-3],[-21,1.2,-3]],electricalNodes:[[-21,.4,-3],[-18,.4,-3],[-18,.4,6],[-12,.4,6],[-10,1.3,6]],labelPositions:[[-27,1.2,14.15],[-25,1.2,-3],[-18,1.2,6],[-10,1.3,6]],labels:['Fuel farm / outlet manifold','Diesel power house','MLVD / UPS','Station distribution']},
-    {id:'heat',name:'HEAT SUPPLY → ROOMS → RETURN',color:'#ed9260',code:'HVAC_GLYCOL',nodes:[[-21,1.6,-4],[-15,1.6,-4],[-15,1.6,-9],[-8,1.6,-9],[8,1.6,-9],[8,2.3,-4]],returnNodes:[[8,2.3,-4],[7,1.6,-10],[-8,1.6,-10],[-16,1.6,-10],[-16,1.6,-5],[-21,1.6,-5]],labelPositions:[[-21,1.6,-4],[-15,1.6,-9],[8,2.3,-4],[-16,1.6,-10]],labels:['Heat supply','Insulated supply main','Space heating','Cool return circuit']},
+    {id:'water',name:'LAKE → TREATMENT → HABITATION',color:'#48c7e6',code:'WATER_INTAKE',nodes:[[30.25,1,-23],[25,1,-23],[25,1,-8],[21,1,-8],[13,1,-8],[13,1,-4],[13,3.8,-4],[13,3.8,6.65],[-7.15,3.8,6.65],[-7.15,2.3,6.65]],labelPositions:[[32,1,-23],[25,1,-16],[21,1,-8],[-7.15,2.3,6.65]],labels:['Lake pump','Trace heated intake','Water treatment','Potable distribution']},
+    {id:'power',name:'FUEL → GENERATORS → MLVD / UPS',color:'#efc45f',code:'POWER_CHP',nodes:[getFuelOutlet('maitri'),[-19,1.2,15.47],[-19,1.2,-3],[-22.76,1.2,-3]],electricalNodes:[[-21,1.2,-3],[-20,1.2,-3],[-20,1.2,6],[-16.32,1.2,6],[-13,1.2,6],[-13,2,6],[-13,2,4],[-11,2,4]],labelPositions:[[-27,1.2,14.15],[-25,1.2,-3],[-16.32,1.2,6],[-11,2,4]],labels:['Fuel farm / outlet manifold','Diesel power house','MLVD / UPS','Station distribution']},
+    {id:'heat',name:'HEAT SUPPLY → ROOMS → RETURN',color:'#ed9260',code:'POWER_CHP',nodes:[[-21.6,1.6,-5.3],[-20,1.6,-5.3],[-20,1.6,-9],[-8,1.6,-9],[8,1.6,-9],[8,1.6,-4]],returnNodes:[[8,1.6,-4],[7,1.6,-4],[7,1.6,-10],[-8,1.6,-10],[-16,1.6,-10],[-16,1.6,-5.3],[-21.6,1.6,-5.3]],labelPositions:[[-21.6,1.6,-5.3],[-15,1.6,-9],[8,1.6,-4],[-16,1.6,-10]],labels:['Heat supply','Insulated supply main','Space heating','Cool return circuit']},
     {id:'logistics',name:'CARGO → AIRLOCK → EXPEDITION STORES',color:'#83eb52',code:'STRUCTURAL_HEALTH',nodes:[[-33,.22,28],[-16,.22,25],[0,.22,18],[0,.22,13],[0,1.32,8],[0,1.32,0],[9,1.32,4]],labelIndices:[0,2,4,6],labels:['Cargo staging','Station approach','Airlock','Expedition stores']},
   ],
   bharati: [
-    {id:'water',name:'SEAWATER → RO → POTABLE STORAGE',color:'#48c7e6',code:'WATER_INTAKE',nodes:[[36,.8,-34],[31,.8,-20],[26,.8,-10],[5,3.3,-7],[5,7,5]],labelIndices:[0,1,3,4],labels:['Seawater pump','Intake pipeline','RO / treatment plant','Potable supply']},
-    {id:'power',name:'JET A1 → DAY TANK → CHP → MLVD / UPS',color:'#efc45f',code:'POWER_CHP',nodes:[getFuelOutlet('bharati'),[-29,1.2,23.42],[-29,1.2,-6.85],[-27,1.1,-6.85],[-27,1.1,-9.1],[-26,1.1,-9.1],[-26,3.4,-9],[-19,3.4,-9]],electricalNodes:[[-19,3.4,-9],[-19,3.4,0],[-19,3.4,8]],labelPositions:[[-38,1.2,19.45],[-27,1.1,-8],[-19,3.4,-9],[-19,3.4,8]],labels:['Fuel farm / outlet manifold','Day tank','CHP energy centre','MLVD / UPS']},
-    {id:'heat',name:'CHP HEAT RECOVERY → GLYCOL → ROOMS → RETURN',color:'#ed9260',code:'HVAC_GLYCOL',nodes:[[-19,4,-9],[-19.3,4,-6.05],[-10,7.1,-10],[17,7.1,-10],[17,7.1,10]],returnNodes:[[17,7.1,10],[-17,7.1,10],[-17,7.1,-5],[-19.3,4,-5]],labelPositions:[[-19,4,-9],[-19.3,4,-6.05],[-10,7.1,-10],[-17,7.1,10]],labels:['CHP exhaust recovery','Heat exchanger','Warm glycol supply','Cool glycol return']},
+    {id:'water',name:'SEAWATER → RO → POTABLE STORAGE',color:'#48c7e6',code:'WATER_INTAKE',nodes:[[34.25,1,-34],[28,1,-34],[28,1,-17],[5,1,-17],[5,3.7,-17],[5,3.7,-6.05],[9,3.7,-6.05],[9,9.1,-6.05],[9,9.1,13.55],[-22.55,9.1,13.55],[-22.55,7.7,13.55]],labelPositions:[[36,1,-34],[28,1,-20],[5,3.7,-6.05],[-22.55,7.7,13.55]],labels:['Seawater pump','Intake pipeline','RO / treatment plant','Potable supply']},
+    {id:'power',name:'JET A1 → DAY TANK → CHP → MLVD / UPS',color:'#efc45f',code:'POWER_CHP',nodes:[getFuelOutlet('bharati'),[-29,1.2,23.42],[-29,1.2,-6.85],[-29,1.1,-6.85],[-27,1.1,-6.85],[-27,1.1,-9.1],[-26,1.1,-9.1],[-26,4,-9.1],[-26,4,-11.55],[-19.4,4,-11.55]],electricalNodes:[[-19.4,4,-11.55],[-26,4,-11.55],[-26,4,8.05],[-18.3,4,8.05]],labelPositions:[[-38,1.2,19.45],[-27,1.1,-8],[-19.4,4,-11.55],[-18.3,4,8.05]],labels:['Fuel farm / outlet manifold','Day tank','CHP energy centre','MLVD / UPS']},
+    {id:'heat',name:'CHP HEAT RECOVERY → GLYCOL → ROOMS → RETURN',color:'#ed9260',code:'HVAC_GLYCOL',nodes:[[-19.4,4,-11.55],[-19.4,4,-6.05],[-19.3,4,-6.05],[-26.5,4,-6.05],[-26.5,4,-17],[17,4,-17],[17,7.1,-17],[17,7.1,-10],[17,7.1,10]],returnNodes:[[17,7.1,10],[18,7.1,10],[18,7.1,-17.8],[18,4,-17.8],[-27.3,4,-17.8],[-27.3,4,-5.4],[-19.3,4,-5.4],[-19.3,4,-6.05]],labelPositions:[[-19.4,4,-11.55],[-19.3,4,-6.05],[17,7.1,-10],[-27.3,4,-5.4]],labels:['CHP exhaust recovery','Heat exchanger','Warm glycol supply','Cool glycol return']},
     {id:'logistics',name:'WEST HELIPAD → CARGO → AIRLOCK → STORES',color:'#83eb52',code:'STRUCTURAL_HEALTH',nodes:[[-48,.22,25],[-35,.22,29],[0,.22,30],[0,.22,26],[0,3.22,15],[0,3.22,0],[10,3.22,8]],labelIndices:[0,1,4,6],labels:['West landing pad','Cargo apron','Station airlock','Expedition stores']},
   ],
 };

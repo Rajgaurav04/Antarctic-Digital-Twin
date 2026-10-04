@@ -43,6 +43,13 @@ export default function StationInterior({site,textures,cutaway=false,floorLevel=
   {!cutaway&&<Block position={[r.x,r.y+2.65,r.z<0?r.z1:r.z0]} size={[1.6,.5,.16]} color='#d6ddda'/>}
  </group>)}
  {partitions.filter(p=>visible(p.y)).map((p,i)=>{const h=cutaway?.65:p.height;return <Block key={i} position={p.axis==='z'?[p.x,p.y+h/2,(p.z0+p.z1)/2]:[(p.x0+p.x1)/2,p.y+h/2,p.z]} size={p.axis==='z'?[p.width,h,p.z1-p.z0]:[p.x1-p.x0,h,p.width]} color='#d7dfda'/>;})}
+ {site==='maitri'&&<Equipment f={{type:'rack',x:-11,y:1.1,z:4,w:.55,d:.3,h:1.8}} telemetry={telemetry}/>}
+ {/* Room radiator: the supply/return workflow terminates on this actual heat load. */}
+ {visible(site==='maitri'?1.1:6.5)&&<group position={site==='maitri'?[8,1.6,-4]:[17,7.1,10]}>
+  <Block size={[1.6,.75,.24]} color='#c7d3d6' heat/>
+  {Array.from({length:10},(_,i)=><Block key={i} position={[-.7+i*.155,0,.13]} size={[.04,.66,.04]} color='#789aa8'/>)}
+  <Tube from={[0,-.2,0]} to={[.9,-.2,0]} radius={.09} color='#ed6d36'/>
+ </group>}
  {furniture.filter(f=>visible(f.y)).map((f,i)=><Equipment key={`${site}-${i}`} f={f} telemetry={telemetry}/>)}
  <Sign text='← RESEARCH / PLANT     LIVING / STORES →' sub='MAIN STATION CIRCULATION' position={[0,b.floor+2.65,-1.35]} width={3.6} height={.5}/>
  </group>;

@@ -12,7 +12,6 @@ import * as THREE from 'three';
 export default function DirectionalFlowConduit({
   points = [],
   pipeRadius = 0.12,
-  baseColor = '#334155',
   lineColor = '#38bdf8',
   lightColor = '#7dd3fc',
   speed = 2.4,
@@ -113,7 +112,7 @@ export default function DirectionalFlowConduit({
       // Clip the packet at every bend/end so it cannot protrude into or past a tank.
       const packetLength=Math.min(lightLength,currentSeg.len);
       const clippedLength=Math.max(.02,Math.min(packetLength,2*(dist-currentSeg.startDist),2*(currentSeg.endDist-dist)));
-      if(variant==='water')mesh.scale.set(pipeRadius*.9,clippedLength/2,pipeRadius*.9);
+      if(variant==='water')mesh.scale.set(pipeRadius*1.22,clippedLength/2,pipeRadius*1.22);
       else mesh.scale.set(1,clippedLength/lightLength,1);
 
       // Fade partial light gracefully at start and end of entire line
@@ -140,54 +139,54 @@ export default function DirectionalFlowConduit({
           {variant!=='electric'&&<mesh position={seg.mid} quaternion={seg.quat} castShadow={variant!=='water'} receiveShadow>
             <cylinderGeometry args={[pipeRadius, pipeRadius, seg.len, 16]} />
             <meshStandardMaterial
-              color={variant==='water'||variant==='heat'?activeLineColor:baseColor}
-              metalness={0.7}
-              roughness={0.35}
-              transparent
-              opacity={variant==='water'?.22:variant==='heat'?.35:.88}
-              depthWrite={variant!=='water'&&variant!=='heat'}
+              color={activeLineColor}
+              emissive={activeLineColor}
+              emissiveIntensity={.35}
+              metalness={.15}
+              roughness={.42}
+              toneMapped={false}
             />
           </mesh>}
 
           {/* Inner Glowing Flow Line (Directional Core Wire) */}
           <mesh position={seg.mid} quaternion={seg.quat}>
             <cylinderGeometry args={[pipeRadius * 0.42, pipeRadius * 0.42, seg.len, 12]} />
-            <meshStandardMaterial
+            <meshBasicMaterial
+              toneMapped={false}
               color={activeLineColor}
-              emissive={activeLineColor}
-              emissiveIntensity={isWarning ? 0.9 : 0.6}
             />
           </mesh>
 
           {/* Directional Chevron Arrows Spaced Along the Wire ("Show direction thru a line") */}
-          {variant!=='water'&&seg.arrowPositions.map((arrowPos, aIdx) => (
+          {variant!=='water'&&seg.len>.9&&seg.arrowPositions.map((arrowPos, aIdx) => (
             <mesh key={`arrow-${aIdx}`} position={arrowPos} quaternion={seg.quat}>
               {/* Cone geometry default points up +Y; aligned with segment direction vector */}
-              <coneGeometry args={[pipeRadius * 1.55, pipeRadius * 2.8, 12]} />
-              <meshStandardMaterial
-                color={activeLineColor}
-                emissive={activeLineColor}
-                emissiveIntensity={1.4}
-                metalness={0.8}
+              <coneGeometry args={[pipeRadius * 1.55, Math.min(pipeRadius * 2.8, seg.len * .6), 12]} />
+              <meshBasicMaterial
+                toneMapped={false}
+                color={activeLightColor}
               />
             </mesh>
           ))}
         </group>
       ))}
 
+      {pathPoints.map((point,i)=><mesh key={`coupling-${i}`} position={point}>
+        <sphereGeometry args={[pipeRadius * (i===0||i===pathPoints.length-1?1.5:1.07),12,8]}/>
+        <meshStandardMaterial color={activeLineColor} emissive={activeLineColor} emissiveIntensity={.25} metalness={.25} roughness={.4} toneMapped={false}/>
+      </mesh>)}
       {/* 2. PARTIAL LIGHT BEAMS MOVING IN THE CONNECTION WIRE IN THE MOVING DIRECTION */}
       {/* Sleek elongated glowing light cylinders (NOT balls) */}
       <group ref={lightsGroupRef}>
         {Array.from({ length: numLights }).map((_, idx) => (
           <mesh key={`light-${idx}`}>
             {variant==='water'?<sphereGeometry args={[1,12,8]}/>:<cylinderGeometry args={[pipeRadius * 1.38, pipeRadius * 1.38, lightLength, 12]}/>}
-            <meshStandardMaterial
+            <meshBasicMaterial
+              toneMapped={false}
               color={activeLightColor}
-              emissive={activeLightColor}
-              emissiveIntensity={isWarning ? 2.8 : 2.2}
               transparent
               opacity={0.85}
-              roughness={0.1}
+              depthWrite={false}
             />
           </mesh>
         ))}

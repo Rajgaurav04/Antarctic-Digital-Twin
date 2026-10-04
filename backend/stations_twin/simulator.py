@@ -437,6 +437,19 @@ class AntarcticSimulator:
             if sensors_to_update:
                 Sensor.objects.bulk_update(sensors_to_update, ['current_value', 'is_anomaly'])
 
+            # Nominal recovery clears previous subsystem warnings as well as sensor flags.
+            affected = {
+                'BLIZZARD_ALERT': {'WEATHER', 'STRUCTURAL_HEALTH', 'BATTERY_STORAGE'},
+                'LAKE_PIPE_FREEZE': {'WATER_INTAKE'},
+                'CHP_GEN2_TRIP': {'POWER_CHP', 'BATTERY_STORAGE'},
+                'GLYCOL_PRESSURE_DROP': {'HVAC_GLYCOL'},
+            }.get(cls.active_incidents.get(station.slug), set())
+            anomalous_subsystems = set(Sensor.objects.filter(station=station, is_anomaly=True).values_list('subsystem_id', flat=True))
+            systems = list(Subsystem.objects.filter(station=station))
+            for system in systems:
+                system.status = 'CRITICAL' if system.code in affected or system.id in anomalous_subsystems else 'NOMINAL'
+            Subsystem.objects.bulk_update(systems, ['status'])
+
             # 3. Bulk create all readings in ONE query
             if readings_to_create:
                 SensorReading.objects.bulk_create(readings_to_create)

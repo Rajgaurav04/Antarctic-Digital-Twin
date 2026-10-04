@@ -5,10 +5,10 @@ import PolarEnvironment from './PolarEnvironment';
 import StationInterior, { Equipment } from './StationInterior';
 import StationSignage from './StationSignage';
 import HotspotMarker from './HotspotMarker';
-import IncidentPulse, { IncidentOutline } from './IncidentPulse';
+import IncidentPulse from './IncidentPulse';
+import { systemState, weatherWarning } from '../dashboard/data';
 import MetAnemometer from './MetAnemometer';
 import ExhaustPlume from './ExhaustPlume';
-import DirectionalFlowConduit from './DirectionalFlowConduit';
 import WorkflowRoute from './WorkflowRoute';
 import { Block, Tube, Sign, Stair, useBuildingTextures, BuildingViewContext } from './ArchitecturalParts';
 import { BUILDINGS, WORKFLOWS, FUEL_FARMS } from './stationLayout';
@@ -91,12 +91,12 @@ function FuelFarm({site}){
     <mesh position={[0,1.2,0]} rotation={[Math.PI/2,0,0]} castShadow><cylinderGeometry args={[.9,.9,2.3,24]}/><meshStandardMaterial color='#c1c7be' metalness={.6} roughness={.5}/></mesh>
     {[-.8,.8].map(s=><Block key={s} position={[0,.35,s]} size={[1.7,.45,.25]} color='#54717d'/>)}
     <Tube from={[0,2,0]} to={[0,2.5,0]} radius={.06}/>
-    <Tube from={[0,1.2,1.12]} to={[0,1.2,1.32]} radius={.105} color='#536b72'/>
-    <Tube from={[0,1.2,1.32]} to={[5.15-x,1.2,1.32]} radius={.085} color='#536b72'/>
+    <Tube from={[0,1.2,1.12]} to={[0,1.2,1.32]} radius={.105} color='#ffbe18'/>
+    <Tube from={[0,1.2,1.32]} to={[5.15-x,1.2,1.32]} radius={.085} color='#ffbe18'/>
     <Block position={[.35,1.2,1.32]} size={[.18,.3,.18]} color='#e4ac45'/>
    </group>;
   })}
-  <Tube from={[5.15,1.2,-4.18]} to={[5.15,1.2,lastCap+.17]} radius={.105} color='#536b72'/>
+  <Tube from={[5.15,1.2,-4.18]} to={[5.15,1.2,lastCap+.17]} radius={.105} color='#ffbe18'/>
   <Sign text={site==='bharati'?'JET A1 / 13 TANK FUEL FARM':'ARCTIC DIESEL / FUEL FARM'} sub='Tank outlets → valve manifold → generator feed' position={[0,2.7,8]} width={9} height={.8}/>
  </group>;
 }
@@ -106,7 +106,7 @@ function Workflows({site,selected,onSelectHotspot,telemetry,reducedMotion,showLa
  const b=BUILDINGS[site],bounds=useMemo(()=>[b.halfX,b.floor,b.halfZ,b.roof],[b]);
  const incidentRoute=({LAKE_PIPE_FREEZE:'water',CHP_GEN2_TRIP:'power',GLYCOL_PRESSURE_DROP:'heat'})[telemetry?.active_incident];
  return <group>
-  {site==='bharati'&&(selected==='all'||selected==='power')&&<DirectionalFlowConduit points={[[56,.1,-53],[43,.4,-27],[29,.4,-22],[-38,.4,-22],[-38,1.2,10.35]]} lineColor='#efc45f' lightColor='#efc45f' pipeRadius={.065} numLights={4} isReducedMotion={reducedMotion}/>}
+
   {routes.map(w=><group key={w.id}>
    <WorkflowRoute route={w} reducedMotion={reducedMotion} warning={w.id===incidentRoute}/>
    {showLabels&&w.labels.map((label,i)=>{
@@ -134,15 +134,22 @@ export default function StationWorld({site,telemetry,onSelectHotspot,viewMode='N
  {steel?<><group position={[-17,0,-3]}><Block position={[0,1.3,-4]} size={[10,2.6,.16]} color='#607f88'/>{[-1,1].map(s=><Block key={s} position={[s*5,1.3,0]} size={[.16,2.6,8]} color='#607f88'/>)}<Vehicle position={[0,0,0]}/><Sign text='GARAGE / WORKSHOP' position={[0,2.5,4.1]} width={6} height={.5}/></group><group position={[-48,.02,25]}><mesh rotation={[-Math.PI/2,0,0]} receiveShadow><circleGeometry args={[9,48]}/><meshStandardMaterial color='#91a09e' roughness={.9}/></mesh><mesh rotation={[-Math.PI/2,0,0]} position={[0,.025,0]}><ringGeometry args={[6.7,6.9,64]}/><meshBasicMaterial color='#d9dfcc'/></mesh><Sign text='H' position={[0,.035,0]} rotation={[-Math.PI/2,0,0]} width={5} height={5} background='#7d939a' color='#f4ecd0'/><Sign text='WEST HELIPAD / CARGO ARRIVAL' position={[0,1.5,10]} width={8} height={.7}/></group><Container position={[37,0,12]} label='EMERGENCY / SUMMER FACILITY' textures={textures} cutaway={cutaway} width={10} color='#a8b3ae'/><Container position={[37,0,17]} label='FIELD LABORATORY' textures={textures} cutaway={cutaway} color='#a4b6b7'/></>:<><Container position={[-25,0,-3]} label='POWER HOUSE' textures={textures} cutaway={cutaway} width={8} depth={6} color='#8c9991'/>{[-27,-24].map(x=><ExhaustPlume key={x} position={[x,3.4,-4]} windSpeed={wind} windDirection={telemetry?.wind_direction??120} isDaylight={isDaylight}/>)}<Container position={[-18,0,6]} label='UPS / ENERGY STORAGE' textures={textures} cutaway={cutaway} color='#819bad'/><IncidentPulse active={incident==='LAKE_PIPE_FREEZE'} reducedMotion={reducedMotion}><Container position={[21,0,-8]} label='WATER TREATMENT' textures={textures} cutaway={cutaway} color='#a6b7b4'/></IncidentPulse>{[0,1,2].map(i=><Container key={i} position={[23+i*7,0,22]} label='SUMMER CAMP' textures={textures} cutaway={cutaway} color='#b6a27f'/>)}<Vehicle position={[-30,0,27]} rotation={-.6}/></>}
  {steel&&<SupplyVessel/>}
  <FuelFarm site={site}/>
+ {!steel&&<Equipment f={{type:'exchanger',x:-21.6,y:.08,z:-5.3,w:.8,d:.8,h:1.8}} telemetry={telemetry}/>}
  {steel&&<group position={[-27,0,-8]}><mesh position={[0,1.1,0]} rotation={[Math.PI/2,0,0]} castShadow><cylinderGeometry args={[.75,.75,2.2,24]}/><meshStandardMaterial color='#8b9b99' metalness={.6} roughness={.4}/></mesh><Block position={[0,.3,0]} size={[1.5,.5,1.7]} color='#455e66'/><Tube from={[0,1.7,0]} to={[0,2.2,0]} radius={.06}/><Sign text='JET A1 / DAY TANK' position={[0,2.4,1.2]} width={3.1} height={.45}/></group>}
  <IncidentPulse active={incident==='LAKE_PIPE_FREEZE'} reducedMotion={reducedMotion}><Container position={steel?[36,0,-34]:[32,0,-23]} label={steel?'SEAWATER PUMP':'LAKE PUMP HOUSE'} textures={textures} cutaway={cutaway} width={3.5} depth={3}/></IncidentPulse>
- <IncidentPulse throughWalls active={incident==='BLIZZARD_ALERT'} reducedMotion={reducedMotion}><MetAnemometer position={steel?[33,0,21]:[21,0,17]} windSpeed={wind} windDirection={telemetry?.wind_direction??120} isDaylight={isDaylight}/></IncidentPulse>
+ <IncidentPulse throughWalls active={weatherWarning(telemetry,'wind')} reducedMotion={reducedMotion}><MetAnemometer position={steel?[33,0,21]:[21,0,17]} windSpeed={wind} windDirection={telemetry?.wind_direction??120} isDaylight={isDaylight}/></IncidentPulse>
  <Container position={[-36,0,32]} label='CARGO / FIELD EQUIPMENT' textures={textures} cutaway={cutaway} color='#ad8f6d'/>
  <group position={[-34,0,28]}>{[0,1,2].map(i=><Block key={i} position={[i*1.5,.6,0]} size={[1.2,1.2,1.2]} color={['#a9afa0','#b08f67','#7696a6'][i]} map={textures.cladding}/>)}</group>
  {workflow!=='none'&&<Workflows site={site} selected={workflow} reducedMotion={reducedMotion} telemetry={telemetry} onSelectHotspot={onSelectHotspot} isModalOpen={isModalOpen} activeSubsystem={activeSubsystem}/>}
  {incidentRoute&&workflow!=='all'&&workflow!==incidentRoute&&<Workflows site={site} selected={incidentRoute} showLabels={false} reducedMotion={reducedMotion} telemetry={telemetry} onSelectHotspot={onSelectHotspot}/>}
- {incident==='LAKE_PIPE_FREEZE'&&<><IncidentOutline position={[21,1.4,-8]} size={[6.4,3,3.2]} reducedMotion={reducedMotion}/><IncidentOutline position={[32,1.4,-23]} size={[3.9,3,3.4]} reducedMotion={reducedMotion}/></>}
- {workflow==='none'&&hotspots.map(([code,position,label])=><HotspotMarker key={code} position={position} label={label} modelBounds={labelBounds} labelVisibility={workflow==='none'&&({CHP_GEN2_TRIP:'POWER_CHP',LAKE_PIPE_FREEZE:'WATER_INTAKE',GLYCOL_PRESSURE_DROP:'HVAC_GLYCOL',BLIZZARD_ALERT:'WEATHER'})[incident]===code} subsystemCode={code} onClick={onSelectHotspot} isModalOpen={isModalOpen} activeHotspot={activeSubsystem} reducedMotion={reducedMotion} status={({CHP_GEN2_TRIP:'POWER_CHP',LAKE_PIPE_FREEZE:'WATER_INTAKE',GLYCOL_PRESSURE_DROP:'HVAC_GLYCOL',BLIZZARD_ALERT:'WEATHER'})[incident]===code?'CRITICAL':incident==='BLIZZARD_ALERT'&&code==='STRUCTURAL_HEALTH'||incident==='CHP_GEN2_TRIP'&&code==='BATTERY_STORAGE'?'WARNING':'NOMINAL'}/>)}
+
+ {hotspots.map(([code,position,label])=>{
+  const system=telemetry?.subsystems?.find(s=>s.code===code);
+  const affected=systemState(system||{code},telemetry)!=='Nominal';
+  // Critical systems remain discoverable in normal mode and while viewing another route.
+  if(workflow!=='none'&&!affected)return null;
+  return <HotspotMarker key={code} position={position} label={label} modelBounds={labelBounds} labelVisibility={affected} subsystemCode={code} onClick={onSelectHotspot} isModalOpen={isModalOpen} activeHotspot={activeSubsystem} reducedMotion={reducedMotion} status={affected?'CRITICAL':'NOMINAL'}/>;
+ })}
  <Sign text={steel?'BHARATI / LARSEMANN HILLS':'MAITRI / SCHIRMACHER OASIS'} sub='INDIAN ANTARCTIC PROGRAMME' position={[0,.18,b.rampEnd+3]} rotation={[-Math.PI/2,0,0]} width={7} height={1.3} background='#647a80' color='#dde4d6'/>
  </group></BuildingViewContext.Provider>;
 }

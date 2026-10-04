@@ -223,3 +223,9 @@ The current simulator selects calm, ambient or blizzard based on wind and the ac
 An active blizzard exercise overrides mild/cold scene previews. Snow particles and fast wind-aligned streaks show blowing snow; reduced-motion preferences retain a static snow field. Floating sensor cards and pointer lines stay crisp and unaffected by atmospheric fog.
 
 Oversized scattered boulders have been removed. Continuous bedrock rises and snowfields interpret Maitri’s Schirmacher Oasis setting and Bharati’s coastal promontory in Larsemann Hills, retaining the lake and coastal water. This is an illustrative reconstruction, not surveyed terrain. Setting reference: [NCPOR Antarctic stations](https://npdc.ncpor.res.in/npdc/antarctica_home.action).
+
+### Connected workflow routes and alerts
+
+The 3D routes use explicit bends and equipment connections in the prototype model. Cyan shows water, amber shows fuel, yellow shows electrical distribution, orange shows heating supply, violet shows heating return, and green ground arrows show cargo movement. Potable supply ends at a rendered kitchen tap; heating ends at a room radiator and returns to the plant. These are illustrative connections, not surveyed station pipe drawings.
+
+Nominal operation clears exercise alerts, sensor flags and subsystem warnings. Exercises update the dashboard and normal 3D view together, including when workflow overlays are off. Streaming command messages use their complete telemetry snapshot, and older snapshots cannot overwrite a newer exercise or recovery state. Scene weather previews do not create station alerts.

@@ -20,7 +20,15 @@ export default function App() {
   const [activeView, setActiveView] = useState(() => {
     return window.location.hash === '#/twin' ? 'twin' : 'dashboard';
   });
-  const [telemetry, setTelemetry] = useState(null);
+  const [telemetry, updateTelemetry] = useState(null);
+  // REST commands and streaming ticks can arrive out of order. Never restore an older alert state.
+  const setTelemetry = useCallback((snapshot) => updateTelemetry(previous => {
+    const next = typeof snapshot === 'function' ? snapshot(previous) : snapshot;
+    if (!next) return next;
+    if (previous?.station_slug === next.station_slug &&
+        Date.parse(next.timestamp) < Date.parse(previous.timestamp)) return previous;
+    return next;
+  }), []);
   const [history, setHistory] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState('CONNECTING');
   const [isAlertsOpen, setIsAlertsOpen] = useState(false);
@@ -101,8 +109,8 @@ export default function App() {
           message.type === 'INCIDENT_TRIGGERED'
         ) {
           lastMessageTimestamp = Date.now();
-          const tickData = message.data?.telemetry || message.data;
-          if (tickData) {
+          const tickData = message.telemetry || message.data?.telemetry || message.data;
+          if (tickData && tickData.station_slug === activeStation) {
             setTelemetry((prev) => {
               const merged = {
                 ...(prev || {}),

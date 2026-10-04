@@ -53,12 +53,12 @@ export default function WorkflowRoute({route,reducedMotion,warning}) {
   const common={isReducedMotion:reducedMotion,isWarning:warning};
   if(route.id==='logistics')return <LogisticsArrows points={route.nodes} color={route.color} reducedMotion={reducedMotion}/>;
   if(route.id==='power')return <group>
-    <DirectionalFlowConduit {...common} points={route.nodes} variant='fuel' pipeRadius={.105} lineColor='#e7ae38' lightColor='#ffd276' speed={1.6} numLights={6}/>
-    <DirectionalFlowConduit {...common} points={route.electricalNodes} variant='electric' pipeRadius={.06} lineColor='#f7df7b' lightColor='#fff3af' speed={4.2} numLights={5} lightLength={.75}/>
+    <DirectionalFlowConduit isReducedMotion={reducedMotion} points={route.nodes} variant='fuel' pipeRadius={.18} lineColor='#ffbe18' lightColor='#fff0ac' speed={1.6} numLights={6}/>
+    <DirectionalFlowConduit {...common} points={route.electricalNodes} variant='electric' pipeRadius={.115} lineColor='#ffea32' lightColor='#fff3af' speed={4.2} numLights={5} lightLength={.75}/>
   </group>;
   if(route.id==='heat')return <group>
-    <DirectionalFlowConduit {...common} points={route.nodes} variant='heat' pipeRadius={.12} lineColor='#f0793d' lightColor='#ffb978' speed={1.8} numLights={5}/>
-    <DirectionalFlowConduit {...common} points={route.returnNodes} variant='heat' pipeRadius={.12} lineColor='#418dbb' lightColor='#8dcced' speed={1.4} numLights={5}/>
+    <DirectionalFlowConduit {...common} points={route.nodes} variant='heat' pipeRadius={.19} lineColor='#ff5b21' lightColor='#ffb978' speed={1.8} numLights={5}/>
+    <DirectionalFlowConduit {...common} points={route.returnNodes} variant='heat' pipeRadius={.19} lineColor='#7266ff' lightColor='#8dcced' speed={1.4} numLights={5}/>
   </group>;
-  return <DirectionalFlowConduit {...common} points={route.nodes} variant='water' pipeRadius={.17} lineColor='#079edb' lightColor='#70e5ff' speed={2.1} numLights={8} lightLength={.7}/>;
+  return <DirectionalFlowConduit {...common} points={route.nodes} variant='water' pipeRadius={.22} lineColor='#00c8fa' lightColor='#70e5ff' speed={2.1} numLights={8} lightLength={.7}/>;
 }
