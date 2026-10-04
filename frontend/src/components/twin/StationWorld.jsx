@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import PolarEnvironment from './PolarEnvironment';
 import StationInterior, { Equipment } from './StationInterior';
 import StationSignage from './StationSignage';
+import StationDetailLayer, { VesselHull } from './StationDetailLayer';
 import HotspotMarker from './HotspotMarker';
 import IncidentPulse from './IncidentPulse';
 import { systemState, weatherWarning } from '../dashboard/data';
@@ -37,7 +38,7 @@ function Facade({site,cutaway,textures,viewMode,floorLevel,isDaylight,weather}){
    {/* Front entrance is an actual opening, not painted onto a solid box. */}
    {(side===1&&y===b.floor?[-1,1]:[0]).map(segment=>{const w=segment?(b.halfX-1.2):b.halfX*2;const x=segment?segment*(1.2+w/2):0;return <group key={segment}>
     <Block position={[x,y+.55,side*b.halfZ]} size={[w,1.1,.2]} color={color} map={steel?textures.cladding:textures.maitri} wireframe={wireframe}/>
-    {!cutaway&&<><mesh position={[x,y+1.1+windowH/2,side*(b.halfZ+.015)]}><boxGeometry args={[w,windowH,.08]}/><meshPhysicalMaterial color='#9ebdc8' metalness={.25} roughness={.12} transparent opacity={.25} clearcoat={1} depthWrite={false}/></mesh><Block position={[x,y+2.8,side*b.halfZ]} size={[w,.65,.22]} map={steel?textures.cladding:textures.maitri} color={color} wireframe={wireframe}/></>}
+    {!cutaway&&<><mesh position={[x,y+1.1+windowH/2,side*(b.halfZ+.015)]}><boxGeometry args={[w,windowH,.08]}/><meshPhysicalMaterial color='#9ebdc8' metalness={.12} roughness={.09} transparent opacity={.7} clearcoat={1} envMap={textures.skyReflection} envMapIntensity={isDaylight?.8:.12} depthWrite={false}/></mesh><Block position={[x,y+2.8,side*b.halfZ]} size={[w,.65,.22]} map={steel?textures.cladding:textures.maitri} color={color} wireframe={wireframe}/></>}
    </group>;})}
    {!cutaway&&Array.from({length:Math.floor(b.halfX*2/2.4)+1},(_,i)=>{const x=-b.halfX+i*2.4;return Math.abs(x)<1.2&&side===1&&y===b.floor?null:<Block key={i} position={[x,y+1.65,side*(b.halfZ+.04)]} size={[.06,3.3,.12]} color='#556e77' metalness={.6}/>;})}
   </group>)}
@@ -73,8 +74,8 @@ function Container({position,label,color='#a5b4ae',textures,width=6,depth=2.8,cu
 }
 function Vehicle({position,rotation=0}){return <group position={position} rotation={[0,rotation,0]}><Block position={[0,.6,0]} size={[2.8,.5,4]} color='#c98746'/>{[-1,1].map(s=><group key={s}><Block position={[s*1.35,.3,0]} size={[.55,.55,4.3]} color='#24313a'/>{Array.from({length:8},(_,i)=><Block key={i} position={[s*1.65,.3,-1.8+i*.5]} size={[.03,.5,.08]} color='#59656a'/>)}</group>)}<Block position={[0,1.65,-.75]} size={[2.25,1.7,1.9]} color='#ba683a'/><Block position={[0,1.9,-1.72]} size={[1.95,.85,.04]} color='#89b4c3' metalness={.6}/><Block position={[0,1.4,1.2]} size={[2.3,.9,1.8]} color='#687f87'/><Sign text='FIELD TRANSPORT' position={[0,1.3,2.13]} width={2} height={.3}/></group>;}
 function SupplyVessel(){return <group position={[56,-.45,-53]} rotation={[0,-.4,0]}>
- <mesh position={[0,.6,0]} scale={[3.5,1.1,9]} castShadow><sphereGeometry args={[1,20,12]}/><meshStandardMaterial color='#963e27' metalness={.25} roughness={.65}/></mesh>
- <Block position={[0,1.7,0]} size={[6.2,.2,16]} color='#a7aba2'/><Block position={[0,3.7,-4]} size={[5,4,5]} color='#e1e6dd'/><Block position={[0,5.9,-4]} size={[5.6,.65,4.8]} color='#dce5dc'/><Block position={[0,5.45,-6.55]} size={[4.8,.85,.04]} color='#557e8a'/>
+ <VesselHull/>
+ <Block position={[0,3.7,-4]} size={[5,4,5]} color='#e1e6dd'/><Block position={[0,5.9,-4]} size={[5.6,.65,4.8]} color='#dce5dc'/><Block position={[0,5.45,-6.55]} size={[4.8,.85,.04]} color='#557e8a'/>
  {[-1,1].map(side=><Block key={side} position={[side*2.55,4.6,-4]} size={[.04,.7,4]} color='#587d87'/>)}
  <Tube from={[0,5.7,-4]} to={[0,8,-4]} radius={.08}/><Tube from={[-2.5,7,-4]} to={[2.5,7,-4]}/>
  {[0,1,2].map(i=><Block key={i} position={[0,2.5,i*2.7]} size={[4,1.4,2.3]} color={['#9b8a6c','#668c8c','#a5744b'][i]}/>)}
@@ -94,6 +95,7 @@ function FuelFarm({site}){
     <Tube from={[0,1.2,1.12]} to={[0,1.2,1.32]} radius={.105} color='#ffbe18'/>
     <Tube from={[0,1.2,1.32]} to={[5.15-x,1.2,1.32]} radius={.085} color='#ffbe18'/>
     <Block position={[.35,1.2,1.32]} size={[.18,.3,.18]} color='#e4ac45'/>
+    <Sign text={`FT-${String(i+1).padStart(2,'0')}`} sub='FUEL STORAGE' position={[0,1.63,1.17]} width={.7} height={.28} background='#dee6e1' color='#253e47'/>
    </group>;
   })}
   <Tube from={[5.15,1.2,-4.18]} to={[5.15,1.2,lastCap+.17]} radius={.105} color='#ffbe18'/>
@@ -130,6 +132,7 @@ export default function StationWorld({site,telemetry,onSelectHotspot,viewMode='N
  <PolarEnvironment weather={weather} site={site} isDaylight={isDaylight} viewMode={viewMode} reducedMotion={reducedMotion}/>
  {!steel&&<Lake weather={weather}/>}
  <Facade weather={weather} site={site} cutaway={cutaway} floorLevel={floorLevel} isDaylight={isDaylight} textures={textures} viewMode={viewMode} reducedMotion={reducedMotion}/>
+ <StationDetailLayer site={site} cutaway={cutaway} floorLevel={floorLevel} viewMode={viewMode}/>
  <StationInterior site={site} textures={textures} cutaway={cutaway} floorLevel={floorLevel} telemetry={telemetry}/>
  {steel?<><group position={[-17,0,-3]}><Block position={[0,1.3,-4]} size={[10,2.6,.16]} color='#607f88'/>{[-1,1].map(s=><Block key={s} position={[s*5,1.3,0]} size={[.16,2.6,8]} color='#607f88'/>)}<Vehicle position={[0,0,0]}/><Sign text='GARAGE / WORKSHOP' position={[0,2.5,4.1]} width={6} height={.5}/></group><group position={[-48,.02,25]}><mesh rotation={[-Math.PI/2,0,0]} receiveShadow><circleGeometry args={[9,48]}/><meshStandardMaterial color='#91a09e' roughness={.9}/></mesh><mesh rotation={[-Math.PI/2,0,0]} position={[0,.025,0]}><ringGeometry args={[6.7,6.9,64]}/><meshBasicMaterial color='#d9dfcc'/></mesh><Sign text='H' position={[0,.035,0]} rotation={[-Math.PI/2,0,0]} width={5} height={5} background='#7d939a' color='#f4ecd0'/><Sign text='WEST HELIPAD / CARGO ARRIVAL' position={[0,1.5,10]} width={8} height={.7}/></group><Container position={[37,0,12]} label='EMERGENCY / SUMMER FACILITY' textures={textures} cutaway={cutaway} width={10} color='#a8b3ae'/><Container position={[37,0,17]} label='FIELD LABORATORY' textures={textures} cutaway={cutaway} color='#a4b6b7'/></>:<><Container position={[-25,0,-3]} label='POWER HOUSE' textures={textures} cutaway={cutaway} width={8} depth={6} color='#8c9991'/>{[-27,-24].map(x=><ExhaustPlume key={x} position={[x,3.4,-4]} windSpeed={wind} windDirection={telemetry?.wind_direction??120} isDaylight={isDaylight}/>)}<Container position={[-18,0,6]} label='UPS / ENERGY STORAGE' textures={textures} cutaway={cutaway} color='#819bad'/><IncidentPulse active={incident==='LAKE_PIPE_FREEZE'} reducedMotion={reducedMotion}><Container position={[21,0,-8]} label='WATER TREATMENT' textures={textures} cutaway={cutaway} color='#a6b7b4'/></IncidentPulse>{[0,1,2].map(i=><Container key={i} position={[23+i*7,0,22]} label='SUMMER CAMP' textures={textures} cutaway={cutaway} color='#b6a27f'/>)}<Vehicle position={[-30,0,27]} rotation={-.6}/></>}
  {steel&&<SupplyVessel/>}

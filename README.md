@@ -229,3 +229,11 @@ Oversized scattered boulders have been removed. Continuous bedrock rises and sno
 The 3D routes use explicit bends and equipment connections in the prototype model. Cyan shows water, amber shows fuel, yellow shows electrical distribution, orange shows heating supply, violet shows heating return, and green ground arrows show cargo movement. Potable supply ends at a rendered kitchen tap; heating ends at a room radiator and returns to the plant. These are illustrative connections, not surveyed station pipe drawings.
 
 Nominal operation clears exercise alerts, sensor flags and subsystem warnings. Exercises update the dashboard and normal 3D view together, including when workflow overlays are off. Streaming command messages use their complete telemetry snapshot, and older snapshots cannot overwrite a newer exercise or recovery state. Scene weather previews do not create station alerts.
+
+### Detailed station scenes
+
+Both scenes include framed glazing, insulated panel joints, support braces and anchor plates, grated stairs, roof ventilation, communications equipment, tank straps and valves, pipe couplings and supports, weather instruments, container fittings, cargo pallets and tracked-vehicle running gear. Bharati's supply vessel has a shaped hull, bridge glazing, deck rails and radar equipment. Cutaway rooms include generator engine parts, heat-exchanger plates, lab instruments, cabinet handles and rack indicators.
+
+Use **Site map** to see facility locations, connected routes, a north arrow, a scale bar and your camera position. Select a numbered facility to move closer; use **Interior cutaway** to inspect equipment inside the station. The map occupies a separate rail so it does not cover the model.
+
+Small fittings use instanced geometry and hide at long viewing distances to limit rendering cost. Terrain includes finer surface detail. Graphics acceleration is required; performance depends on the device. These are illustrative prototype details based on the station facilities described by NCPOR, not measured or certified engineering layouts.

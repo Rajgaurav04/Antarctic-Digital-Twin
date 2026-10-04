@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import IncidentPulse from './IncidentPulse';
+import { PrecisionEquipment } from './StationDetailLayer';
 import { Block, Sign, Tube } from './ArchitecturalParts';
 import { BUILDINGS, ROOMS, getFurniture, getPartitionBoxes, partitionAABB, furnitureAABB } from './stationLayout';
 
@@ -23,6 +24,7 @@ export function Equipment({f,telemetry}){
  {(type==='generator'||type==='diesel-generator')&&<><Block position={[0,.25,0]} size={[w+.2,.35,d+.2]} color='#344c59'/><Block heat={!(type==='generator'&&telemetry?.active_incident==='CHP_GEN2_TRIP'&&Math.abs(f.x+19.4)<.5)} position={[0,.9,0]} size={[w*.72,1.05,d*.9]} color='#bdad87'/><mesh position={[0,.9,d*.4]} rotation={[Math.PI/2,0,0]}><cylinderGeometry args={[.56,.56,.65,18]}/><meshStandardMaterial color='#617880' metalness={.65}/></mesh>{Array.from({length:8},(_,i)=><Block key={i} position={[w*.37,.6+i*.12,0]} size={[.07,.035,d*.72]} color='#243d45'/>)}<Tube from={[0,1.35,-d*.35]} to={[0,2.55,-d*.35]} radius={.11}/><Sign text={type==='diesel-generator'?'DIESEL GENERATION':'CHP • JET A1'} sub={type==='diesel-generator'?'STATION POWER HOUSE':'100 kVA / HEAT RECOVERY'} position={[0,1.1,d*.47]} width={w*.65} height={.3}/></>}
  {(type==='filter'||type==='pump'||type==='exchanger'||type==='battery'||type==='laundry'||type==='gym')&&<><Block position={[0,.12,0]} size={[w,.18,d]} color='#405865'/>{type==='filter'?<><mesh position={[0,h*.48,0]}><cylinderGeometry args={[w*.34,w*.34,h*.82,20]}/><meshStandardMaterial color='#9cc9c8' metalness={.5} roughness={.4}/></mesh><Tube from={[0,h*.9,0]} to={[0,h+.25,0]} radius={.08} color='#6daec4'/><Sign text='RO / FILTER' position={[0,h*.5,d*.46]} width={w*.7} height={.2}/></>:<><Block heat={type==='exchanger'} position={[0,h*.5,0]} size={[w*.85,h*.8,d*.8]} color={type==='battery'?'#243d4d':'#8da4a9'} metalness={.4}/>{[-.3,0,.3].map((x,i)=><Block key={i} position={[x*w,h*.55,d*.42]} size={[w*.18,h*.6,.04]} color={i===0?'#72bba8':'#4f717c'}/>)}<Sign text={type.toUpperCase()} position={[0,h*.8,d*.44]} width={Math.min(w*.8,2)} height={.24}/></>}</>}
  {type==='kitchen'&&<><Block position={[0,h+.15,-d*.4]} size={[w,.3,.08]} color='#b6c4c4'/><Block position={[-w*.2,h+.012,0]} size={[.65,.02,.4]} color='#557079'/><Tube from={[w*.25,h,0]} to={[w*.25,h+.25,0]} radius={.025} color='#ccd6d8'/></>}
+ <PrecisionEquipment f={f}/>
  </group></IncidentPulse>;
 }
 export default function StationInterior({site,textures,cutaway=false,floorLevel='science',telemetry}){

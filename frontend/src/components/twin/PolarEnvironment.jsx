@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { createPolarWaterTexture } from './polarTextures';
 
 const TERRAIN_SIZE = 160;
-const TERRAIN_SEGMENTS = 224;
+const TERRAIN_SEGMENTS = 320;
 // Preserve level work areas around the model's interpreted facilities.
 const FACILITY_APRONS = {
  maitri:[[0,0,12,8],[-25,-3,4,3],[-18,6,3,1.4],[21,-8,3,1.4],[32,-23,1.75,1.5],[-27,17,6,7.5],[23,22,3,1.4],[30,22,3,1.4],[37,22,3,1.4],[-30,27,3,3],[-36,32,3,1.4],[21,17,2,2]],
@@ -33,7 +33,7 @@ export function terrainHeight(site, x, z) {
   const broad = Math.sin(x * 0.065 + 0.8) * 0.58
     + Math.cos(z * 0.072 - 0.4) * 0.48
     + Math.sin((x + z) * 0.043) * 0.37;
-  const fine = Math.sin(x * 0.21 + Math.cos(z * 0.13)) * Math.cos(z * 0.19) * 0.2;
+  const fine = Math.sin(x * 0.21 + Math.cos(z * 0.13)) * Math.cos(z * 0.19) * 0.2 + Math.sin(x*1.17+z*.42)*Math.cos(z*.83)*.065;
   const ridges = Math.pow(Math.max(0, Math.sin((x * 0.55 + z * 0.31) * 0.16)), 4) * 0.55;
   // Broad, connected bedrock rises replace isolated spherical boulders. These
   // landforms interpret the oasis / coastal promontory, not surveyed elevations.
@@ -63,7 +63,7 @@ export function coastlineZ(x) {
 }
 
 function createSnowTexture() {
-  const size = 512;
+  const size = 1024;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -74,7 +74,7 @@ function createSnowTexture() {
   context.fillRect(0, 0, size, size);
 
   // Fine ice grain and wind-combed sastrugi, baked once into a small seamless tile.
-  for (let index = 0; index < 8200; index += 1) {
+  for (let index = 0; index < 24000; index += 1) {
     const shade = random() > 0.5 ? '255,255,255' : '104,132,145';
     const alpha = random() * 0.1;
     const pixel = random() > 0.92 ? 2 : 1;
@@ -97,7 +97,7 @@ function createSnowTexture() {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(12, 12);
+  texture.repeat.set(24, 24);
   texture.anisotropy = 4;
   texture.needsUpdate = true;
   return texture;
@@ -234,16 +234,19 @@ export default function PolarEnvironment({ site = 'maitri', isDaylight = true, v
   const coverage=weather?.cover??.45;
   const terrainGeometry = useMemo(() => createTerrainGeometry(site,coverage), [site,coverage]);
   const snowTexture = useMemo(() => createSnowTexture(), []);
+  const terrainBump = useMemo(()=>{const t=snowTexture.clone();t.colorSpace=THREE.NoColorSpace;return t;},[snowTexture]);
   const skyTint = site === 'maitri' ? '#e5f0f3' : '#d9ebef';
 
   useEffect(()=>()=>terrainGeometry.dispose(),[terrainGeometry]);
-  useEffect(()=>()=>snowTexture.dispose(),[snowTexture]);
+  useEffect(()=>()=>{snowTexture.dispose();terrainBump.dispose();},[snowTexture,terrainBump]);
 
   return (
     <group>
       <mesh geometry={terrainGeometry} receiveShadow>
         <meshStandardMaterial
           map={snowTexture}
+          bumpMap={terrainBump}
+          bumpScale={.18}
           vertexColors
           color={viewMode === 'THERMAL' ? '#73a9df' : isDaylight ? '#ffffff' : '#9bb9ce'}
           roughness={0.94}

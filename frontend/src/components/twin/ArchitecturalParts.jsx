@@ -18,7 +18,11 @@ export function Sign({text,sub='',position,rotation=[0,0,0],width=2,height=.48,c
 export function useBuildingTextures(){
  const textures=useMemo(()=>{
   const make=(base,kind)=>{const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const c=canvas.getContext('2d');c.fillStyle=base;c.fillRect(0,0,512,512);let seed=72493;const rand=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};for(let i=0;i<10000;i++){c.fillStyle=`rgba(${rand()>.5?'255,255,255':'0,0,0'},${rand()*.055})`;c.fillRect(rand()*512,rand()*512,1,1);}if(kind==='panel'){for(let x=0;x<512;x+=32){c.fillStyle='rgba(12,32,44,.18)';c.fillRect(x,0,2,512);c.fillStyle='rgba(255,255,255,.16)';c.fillRect(x+2,0,1,512);}c.fillStyle='rgba(0,0,0,.14)';c.fillRect(0,0,512,3);}if(kind==='floor'){c.strokeStyle='rgba(50,70,74,.16)';for(let x=0;x<512;x+=128){c.strokeRect(x,0,128,128);c.strokeRect(x,128,128,128);c.strokeRect(x,256,128,128);c.strokeRect(x,384,128,128);}}const t=new THREE.CanvasTexture(canvas);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(kind==='floor'?6:4,kind==='floor'?6:1);t.anisotropy=4;return t;};
-  return {cladding:make('#b6c0c4','panel'),maitri:make('#d49c62','panel'),floor:make('#bdc9c9','floor'),rubber:make('#34424a','floor'),roof:make('#608579','panel')};
+  const reflectionCanvas=document.createElement('canvas');reflectionCanvas.width=512;reflectionCanvas.height=256;
+  const rc=reflectionCanvas.getContext('2d'),gradient=rc.createLinearGradient(0,0,0,256);
+  gradient.addColorStop(0,'#638ea8');gradient.addColorStop(.46,'#c1d5df');gradient.addColorStop(.53,'#eef2f0');gradient.addColorStop(1,'#718488');rc.fillStyle=gradient;rc.fillRect(0,0,512,256);
+  const skyReflection=new THREE.CanvasTexture(reflectionCanvas);skyReflection.colorSpace=THREE.SRGBColorSpace;skyReflection.mapping=THREE.EquirectangularReflectionMapping;
+  return {skyReflection,cladding:make('#b6c0c4','panel'),maitri:make('#d49c62','panel'),floor:make('#bdc9c9','floor'),rubber:make('#34424a','floor'),roof:make('#608579','panel')};
  },[]);
  useEffect(()=>()=>Object.values(textures).forEach(t=>t.dispose()),[textures]);return textures;
 }

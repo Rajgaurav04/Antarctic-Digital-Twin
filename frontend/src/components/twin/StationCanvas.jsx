@@ -6,6 +6,7 @@ import MaitriModel from './MaitriModel';
 import BharatiModel from './BharatiModel';
 import BlizzardParticles from './BlizzardParticles';
 import NormalNavigationController from './NormalNavigationController';
+import SiteNavigator, { CameraMapTracker } from './SiteNavigator';
 import { WEATHER_OPTIONS, sceneWeather } from './stationWeather';
 import { stationTour } from './guidedTour';
 import { WORKFLOWS } from './stationLayout';
@@ -45,7 +46,8 @@ class SceneBoundary extends React.Component {
 }
 
 export default function StationCanvas({stationSlug,telemetry,onSelectHotspot,isFullscreen,onToggleFullscreen,cameraTargetPosition,cameraTargetLookAt,waypointTrigger,isModalOpen=false,activeSubsystem=null,onToggleTelemetry,isTourActive=false,onTourActiveChange}) {
- const controlsRef=useRef(),savedView=useRef(null);
+ const controlsRef=useRef(),savedView=useRef(null),mapMarkerRef=useRef(),mapHeightRef=useRef();
+ const [mapOpen,setMapOpen]=useState(false);
  const [tourOpen,setTourOpen]=useState(false),[tourIndex,setTourIndex]=useState(0),[arrived,setArrived]=useState(false),[tourDone,setTourDone]=useState(false),[navigation,setNavigation]=useState(null),[flightRevision,setFlightRevision]=useState(0),[tourManualFlight,setTourManualFlight]=useState(false);
  const stops=useMemo(()=>stationTour(stationSlug),[stationSlug]);const tourStop=stops[tourIndex]||stops[0];
 const [weatherChoice,setWeatherChoice]=useState('auto');
@@ -63,6 +65,7 @@ const [weatherChoice,setWeatherChoice]=useState('auto');
  useEffect(()=>{
   setTourManualFlight(false);
   if(!isTourActive)return;
+  setMapOpen(false);
   if(!tourOpen){savedView.current={workflow,cutaway,floorLevel,viewMode,position:controlsRef.current?.object.position.toArray(),look:controlsRef.current?.target.toArray()};setTourIndex(0);setTourOpen(true);setTourDone(false);setArrived(false);setNavigation(null);}
   else {if(tourDone){setTourIndex(0);setTourDone(false);}setNavigation(null);setArrived(false);setFlightRevision(v=>v+1);}
  },[isTourActive]);
@@ -88,7 +91,7 @@ const [weatherChoice,setWeatherChoice]=useState('auto');
   <div className="station-commandbar" aria-label="Three-dimensional view controls">
    <div className="station-control-group"><span className="station-tool-label">DISPLAY</span>{[['NORMAL','Real'],['THERMAL','Thermal IR'],['XRAY','X-ray']].map(([id,name])=><button key={id} aria-pressed={viewMode===id} onClick={()=>{onTourActiveChange?.(false);setViewMode(id);}}>{name}</button>)}<button aria-pressed={!day} onClick={()=>setDay(v=>!v)}>{day?<Sun/>:<Moon/>}{day?'Daylight':'Polar night'}</button></div>
    <div className="station-control-group"><span className="station-tool-label">INSPECT</span><button aria-pressed={cutaway} onClick={()=>cutaway?(setCutaway(false),preset(overview,target)):inspect()}>Interior cutaway</button>{cutaway&&!maitri&&<><button aria-pressed={floorLevel==='science'} onClick={()=>inspect('science')}>Science / services</button><button aria-pressed={floorLevel==='living'} onClick={()=>inspect('living')}>Living floor</button></>}</div>
-   <div className="station-control-group station-camera-tools">{isFullscreen&&<><button aria-pressed={isTourActive} onClick={()=>onTourActiveChange?.(!isTourActive)}>{isTourActive?'Pause tour':'Auto tour'}</button><button onClick={onToggleTelemetry}>Telemetry</button></>}<button aria-label="Zoom in" onClick={()=>zoom(.8)}><ZoomIn/></button><button aria-label="Zoom out" onClick={()=>zoom(1.25)}><ZoomOut/></button><button aria-label="Reset camera" onClick={reset}><RotateCcw/></button><button aria-label={isFullscreen?'Exit fullscreen':'Fullscreen 3D view'} onClick={onToggleFullscreen}>{isFullscreen?<Minimize2/>:<Maximize2/>}</button></div>
+   <div className="station-control-group station-camera-tools"><button aria-pressed={mapOpen} onClick={()=>{closeTour();setMapOpen(v=>!v);}}>Site map</button>{isFullscreen&&<><button aria-pressed={isTourActive} onClick={()=>onTourActiveChange?.(!isTourActive)}>{isTourActive?'Pause tour':'Auto tour'}</button><button onClick={onToggleTelemetry}>Telemetry</button></>}<button aria-label="Zoom in" onClick={()=>zoom(.8)}><ZoomIn/></button><button aria-label="Zoom out" onClick={()=>zoom(1.25)}><ZoomOut/></button><button aria-label="Reset camera" onClick={reset}><RotateCcw/></button><button aria-label={isFullscreen?'Exit fullscreen':'Fullscreen 3D view'} onClick={onToggleFullscreen}>{isFullscreen?<Minimize2/>:<Maximize2/>}</button></div>
   </div>
   <div className="station-workflowbar"><span className="station-tool-label">WORKFLOWS</span>{[['none','Off'],['all','All routes'],...WORKFLOWS[stationSlug].map(r=>[r.id,({water:'Water supply',power:'Fuel & power',heat:'Heating loop',logistics:'Cargo & stores'})[r.id]])].map(([id,name])=><button key={id} aria-pressed={workflow===id} onClick={()=>{onTourActiveChange?.(false);setWorkflow(id);}}>{name}</button>)}</div>
   <div className="station-weatherbar" aria-label="Scene weather simulation"><span className="station-tool-label">WEATHER</span>{WEATHER_OPTIONS.map(([id,label])=><button key={id} disabled={telemetry?.active_incident==='BLIZZARD_ALERT'&&id!=='auto'&&id!=='blizzard'} aria-pressed={weatherChoice===id} onClick={()=>setWeatherChoice(id)}>{label}</button>)}<span className="station-weather-summary"><span className={weather.id==='blizzard'||weather.temperature<=-30?'dt-danger-value':''}>{weather.temperature.toFixed(0)} °C</span> · <span className={weather.id==='blizzard'||weather.wind>60?'dt-danger-value':''}>{weather.wind.toFixed(0)} km/h</span> · {weather.description}</span>{weatherChoice!=='auto'&&telemetry?.active_incident!=='BLIZZARD_ALERT'&&<small>Scene preview · station readings unchanged</small>}</div>
@@ -100,6 +103,7 @@ const [weatherChoice,setWeatherChoice]=useState('auto');
     <CameraRig targetPosition={navigation?.position||(tourOpen?tourStop.camPos:cameraTargetPosition)} targetLookAt={navigation?.look||(tourOpen?tourStop.targetPos:cameraTargetLookAt)} waypointTrigger={`${waypointTrigger}-${tourOpen?tourIndex:'manual'}-${navigation?.revision||0}-${flightRevision}`} controlsRef={controlsRef} paused={isModalOpen||(tourOpen&&!isTourActive&&!tourManualFlight)} reducedMotion={reduced} onArrive={()=>{setArrived(true);setTourManualFlight(false);}} onInteraction={()=>{setTourManualFlight(false);onTourActiveChange?.(false);}}/>
 
     <NormalNavigationController controlsRef={controlsRef} paused={isModalOpen} reducedMotion={reduced}/>
+    {mapOpen&&<CameraMapTracker markerRef={mapMarkerRef} heightRef={mapHeightRef}/>}
     <color attach="background" args={[day?weather.sky:'#071522']}/><fog attach="fog" args={[day?weather.sky:'#071522',day?weather.fog[0]:Math.min(65,weather.fog[0]),day?weather.fog[1]:Math.min(150,weather.fog[1])]}/>
     <ambientLight intensity={viewMode==='THERMAL'?.3:day?.8:.5} color="#dcecf5"/>
     <directionalLight position={[-36,48,40]} intensity={viewMode==='THERMAL'?.6:day?weather.sun:.65} color={day?'#fff5df':'#829bd3'} castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} shadow-camera-far={150} shadow-camera-left={-70} shadow-camera-right={70} shadow-camera-top={70} shadow-camera-bottom={-70}/>
@@ -108,6 +112,7 @@ const [weatherChoice,setWeatherChoice]=useState('auto');
     <Suspense fallback={null}><Model weather={weather} telemetry={telemetry} onSelectHotspot={onSelectHotspot} viewMode={viewMode} isDaylight={day} isModalOpen={isModalOpen} activeSubsystem={activeSubsystem} cutaway={cutaway} floorLevel={floorLevel} workflow={workflow} reducedMotion={reduced}/></Suspense>
    </Canvas>
    </SceneBoundary>
+   {mapOpen&&<SiteNavigator site={stationSlug} markerRef={mapMarkerRef} heightRef={mapHeightRef} onClose={()=>setMapOpen(false)} onInspect={(position,look)=>{setCutaway(false);preset(position,look);}}/>}
    {tourOpen&&<aside className="station-tour-guide" aria-label="Guided station tour">
     <div className="station-tour-heading"><span>STATION GUIDE · {String(tourIndex+1).padStart(2,'0')} / {stops.length}</span><button aria-label="Close guided tour" onClick={closeTour}>×</button></div>
     <h3>{tourStop.title}</h3><p>{tourStop.description}</p><ul>{tourStop.points.map(point=><li key={point}>{point}</li>)}</ul>
